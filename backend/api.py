@@ -19,7 +19,10 @@ words = url | make_request | run | get['response_text']   | collect
 (ET.WordList, RT.FiveLetters, words) | g | run
 
 # ----------------UTILS--------------------------------
-
+def connect_zef_function_resolvers(gql_type, d):
+    for field, handler_func in d.items():
+        gql_rt = find_field_with_name(gql_type, field)
+        create_zef_function_resolver(g, gql_rt, handler_func)
 # ----------------UTILS--------------------------------
 
 """
