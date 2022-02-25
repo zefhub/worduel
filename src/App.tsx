@@ -1,26 +1,64 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
+import Loading from "components/Loading";
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
-}
+// Scenes
+import UsernameScene from "scenes/Username";
+import CreateDuelScene from "scenes/CreateDuel";
+import DuelScene from "scenes/Duel";
+
+const SCENES = {
+  USERNAME: "USERNAME",
+  CREATE_DUEL: "CREATE_DUEL",
+  DUEL: "DUEL",
+};
+
+const App: React.FC = () => {
+  const params = useParams();
+
+  const [loading, setLoading] = useState<boolean>(true);
+  const [scene, setScene] = useState<string>("");
+
+  useEffect(() => {
+    console.log(params);
+    // Check for match ID
+    if (params && params.duelId) {
+      if (localStorage.getItem("user")) {
+        setScene(SCENES.DUEL);
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Check for existing user session
+    if (!localStorage.getItem("user")) {
+      setScene(SCENES.USERNAME);
+      setLoading(false);
+      return;
+    }
+    if (localStorage.getItem("user")) {
+      setScene(SCENES.CREATE_DUEL);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(false);
+  }, []);
+
+  const getScene = () => {
+    switch (scene) {
+      case SCENES.USERNAME:
+        return <UsernameScene setScene={setScene} />;
+      case SCENES.CREATE_DUEL:
+        return <CreateDuelScene setScene={setScene} />;
+      case SCENES.DUEL:
+        return <DuelScene />;
+      default:
+        return <h1>Error</h1>;
+    }
+  };
+
+  return <div className="p-10">{loading ? <Loading /> : getScene()}</div>;
+};
 
 export default App;
