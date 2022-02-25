@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState } from "react";
 import GraphemeSplitter from "grapheme-splitter";
 import { MAX_WORD_LENGTH, MAX_CHALLENGES } from "constants/settings";
