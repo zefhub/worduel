@@ -263,7 +263,6 @@ def get_game_duel(z: VT.ZefRef, **defaults):
 def get_game_completed(z: VT.ZefRef, **defaults):
     return z >> O[RT.Completed] | maybe_value | collect
 
-#%%
 schema = gql_schema(g)
 types  = gql_types_dict(schema)
 
@@ -345,9 +344,10 @@ connect_zef_function_resolvers(types['GQL_Game'], game_dict)
 # resolvers_destination = f"{os.getcwd()}/"
 # schema = make_api(now(schema), schema_destination, resolvers_destination)
 
-
-Effect({
-        "type": FX.GraphQL.StartPlayground,
-        "schema_root": gql_schema(g),
-        "port": 5010,
-}) | run
+if __name__ == "__main__":
+    Effect({
+            "type": FX.GraphQL.StartPlayground,
+            "schema_root": gql_schema(g),
+            "port": 5010,
+    }) | run
+    while True: pass
