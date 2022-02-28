@@ -41,7 +41,7 @@ const Duel: React.FC = () => {
         Challanges you to a Worduel
       </h1>
       <div className="flex justify-center mb-12">
-        <div className="w-1/5 card">
+        <div className="w-30 card">
           <p className="text-lg flex justify-center mb-3">Enter your guess:</p>
           <Grid
             guesses={guesses}

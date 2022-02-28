@@ -23,7 +23,7 @@ const CreateDuel: React.FC<CreateDuelProps> = (props) => {
       <WelcomeBanner />
       <div className="flex justify-center mb-12">
         {!duelLink ? (
-          <div className="w-1/5 card">
+          <div className="w-30 card">
             <form onSubmit={handleSubmit(onDuelCreate)}>
               <label
                 htmlFor="word"
@@ -50,7 +50,7 @@ const CreateDuel: React.FC<CreateDuelProps> = (props) => {
             </form>
           </div>
         ) : (
-          <div className="w-1/5 card">
+          <div className="w-30 card">
             <label htmlFor="word" className="text-lg flex justify-center mb-3">
               Send this link to your friend:
             </label>
