@@ -14,7 +14,7 @@ ReactDOM.render(
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<App />} />
-          <Route path="/duel/:duelId" element={<App />} />
+          <Route path="/duel/:duelId/game/:gameId" element={<App />} />
         </Routes>
       </BrowserRouter>
     </ApolloProvider>
