@@ -78,6 +78,9 @@ const DuelSpectator: React.FC = () => {
                 isRevealing={false}
                 currentRowClassName=""
               />
+              {isGameWon && (
+                <div className="text-center mt-5">Game was WON!</div>
+              )}
             </Fragment>
           )}
         </div>
