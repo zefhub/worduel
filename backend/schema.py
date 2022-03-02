@@ -39,7 +39,7 @@ type SubmitGuessReturnType {
   solved:           Boolean
   failed:           Boolean
   guessResult:      [String]
-  discardedLetters: String
+  discardedLetters: [String]
   message:          String
 }
 

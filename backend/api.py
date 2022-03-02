@@ -1,6 +1,3 @@
-# TODO add is_out somehow from the schemas directly. Pass with connecting function
-# TODO create Delegates?
-# TODO zef functions to take more than default args?
 #%%
 from zef import * 
 from zef.ops import * 
@@ -9,46 +6,29 @@ from zef.gql.generate_gql_api import generate_graph_from_file, make_api
 from zef.gql.resolvers_utils import *
 from schema import schema_gql
 
-
+wordle_tag = "wordle-api-0"
 g = Graph()
 generate_graph_from_file(schema_gql, g)
+
+GraphDelta(
+    [
+    delegate[(ET.User, RT.Name, AET.String)],
+    delegate[(ET.Duel, RT.Participant, ET.User)],
+    delegate[(ET.Duel, RT.Game, ET.Game)],
+    delegate[(ET.Game, RT.Creator, ET.User)],
+    delegate[(ET.Game, RT.Player, ET.User)],
+    delegate[(ET.Game, RT.Completed, AET.Bool)],
+    delegate[(ET.Game, RT.Solution, AET.String)],
+    delegate[(ET.Game, RT.Guess, AET.String)],
+    ]
+) | g | run
 
 
 url = "https://raw.githubusercontent.com/charlesreid1/five-letter-words/master/sgb-words.txt"
 words = url | make_request | run | get['response_text']   | collect
 (ET.WordList, RT.FiveLetters, words) | g | run
 
-# ----------------UTILS--------------------------------
-def connect_zef_function_resolvers(gql_type, d):
-    for field, handler_func in d.items():
-        gql_rt = find_field_with_name(gql_type, field)
-        create_zef_function_resolver(g, gql_rt, handler_func)
-# ----------------UTILS--------------------------------
 
-"""
-userA  = create_user("A", g)
-duel   = create_duel(userA, g)
-game   = create_game("guess", duel, userA, g)['id']
-userB  = create_user("B", g)
-accept_duel(duel, userB, g)
-
-submit_guess(game, "CRANE", g)
-submit_guess(game, "GUEST", g)
-submit_guess(game, "Black", g)
-submit_guess(game, "flank", g)
-
-submit_guess(game, "guess", g)   
-submit_guess(game, "stake", g)    # already completed
-
-# submit_guess(game, "small", g) # FAILED
-# submit_guess(game, "guess", g)   # SOLVED
-
-# submit_guess(game, "MIST", g)   # not 5 letters
-# submit_guess(game, "CRANE", g)  # used before
-# submit_guess(game, "ZEYAD", g)  # not in wordlist
-
-# yo(get_game(game, g))
-"""
 ############--Mutations--###############
 # createUser(name: String): ID
 @func(g)
@@ -139,10 +119,11 @@ def accept_duel( duel_id: str, player_id: str, g: VT.Graph, **defaults) -> str:
 # submitGuess(gameId: ID, guess: String): SubmitGuessReturnType
 @func(g)
 def submit_guess(game_id, guess, g: VT.Graph, **defaults):
-    def make_return(is_eligible: bool  = True, solved: bool = False, failed: bool = False, guess_result: str = "", message: str = ""):
-        return {"isEligibleGuess": is_eligible, "solved": solved, "failed": failed, "guessResult": guess_result, "message": message}
+    def make_return(is_eligible: bool = True, solved: bool = False, failed: bool = False, guess_result: list = [], message: str = "", discard_letters: list = []):
+        return {"isEligibleGuess": is_eligible, "solved": solved, "failed": failed, "guessResult": guess_result, "message": message, "discardedLetters": discard_letters}
     
     def make_guess(guess, to_be_guessed):
+        discard_letters = set()
         def dispatch_letter(arg):
             i, c = arg
             nonlocal to_be_guessed
@@ -153,14 +134,14 @@ def submit_guess(game_id, guess, g: VT.Graph, **defaults):
                 to_be_guessed = replace_at(to_be_guessed.rindex(c), c.lower(), to_be_guessed)
                 return f"[{c}]"
             else:                             
-                # if Not[contains[c.lower()]](to_be_guessed): discard_letters.add(c)
+                if Not[contains[c.lower()]](to_be_guessed): discard_letters.add(c)
                 return "_"
         
         return (guess                       
                 | enumerate                 
                 | map[dispatch_letter]      
                 | collect 
-            )#, discard_letters
+            ), list(discard_letters)
 
     if game_id not in g: return None
     MAX_GUESSES = 6
@@ -179,31 +160,39 @@ def submit_guess(game_id, guess, g: VT.Graph, **defaults):
                     (game, RT.Guess, guess),
                     (completed <= True),
         ]) | g | run
-        return make_return(guess_result = make_guess(guess, solution), solved = True)
+        guess_result, discard_letters = make_guess(guess, solution)
+        return make_return(guess_result = guess_result, discard_letters = discard_letters , solved = True)
 
-    wordlist_rt = {5: RT.FiveLetters}[length(solution)]
+    wordlist_rt = {5: RT.FiveLetters}.get(length(solution), 5)   # Update this
     wordlist = g | all[wordlist_rt] | first | target | now | value | split['\n'] | map[to_upper] | collect
     previous_guesses = game >> L[RT.Guess] | value | collect
-    is_eligible_guess = And[length | equals[length(solution)]][contained_in[wordlist + [solution]]][Not[contained_in[previous_guesses]]]
+
+    equal_to_length    = length | equals[length(solution)]
+    in_wordlist        = contained_in[wordlist + [solution]]
+    not_previous_guess = Not[contained_in[previous_guesses]]
+    is_eligible_guess  = And[equal_to_length][in_wordlist][not_previous_guess]
 
     if is_eligible_guess(guess):
-        guess_result = make_guess(guess, solution)
+        guess_result, discard_letters = make_guess(guess, solution)
         # If this is the last guess
         if len(previous_guesses) == MAX_GUESSES - 1:
             GraphDelta([
                     (game, RT.Guess, guess),
                     (completed <= True),
             ]) | g | run
-            return make_return(guess_result = guess_result, failed = True)
+            return make_return(guess_result = guess_result, failed = True, discard_letters = discard_letters)
         else:
             GraphDelta([
                     (game, RT.Guess, guess),
             ]) | g | run
-            return make_return(guess_result = guess_result)
+            return make_return(guess_result = guess_result, discard_letters = discard_letters)
     else:
-        #TODO more specific messages based on elgibility?
-        return make_return(is_eligible = False)
-
+        if Not[equal_to_length](guess):
+            return make_return(is_eligible = False, message = f"Guess isn't {length(solution)} characters long.")
+        elif Not[in_wordlist](guess):
+            return make_return(is_eligible = False, message = f"Guess isn't in the wordlist.")
+        else:
+            return make_return(is_eligible = False, message = f"You made this guess before!")
 
 #############--Querys--###############
 # getUser(usedId: ID): User
@@ -218,51 +207,6 @@ def get_game(game_id, g: VT.Graph, **defaults):
     return now(g[game_id])
 
 
-#############--User--###############
-@func(g)
-def get_user_name(z: VT.ZefRef, **defaults):
-    return z >> RT.Name | value | collect
-
-@func(g)
-def get_user_duels(z: VT.ZefRef, **defaults):
-    return z << L[RT.Participant] | collect
-
-
-# #############--Duel--###############
-@func(g)
-def get_duel_players(z: VT.ZefRef, **defaults):
-    return z >> L[RT.Participant] | collect
-
-@func(g)
-def get_duel_games(z: VT.ZefRef, **defaults):
-    return z >> L[RT.Game] | collect
-
-
-# #############--Game--###############
-@func(g)
-def get_game_creator(z: VT.ZefRef, **defaults):
-    return z >> O[RT.Creator] | collect
-
-@func(g)
-def get_game_player(z: VT.ZefRef, **defaults):
-    return z >> O[RT.Player] | collect
-
-@func(g)
-def get_game_solution(z: VT.ZefRef, **defaults):
-    return z >> O[RT.Solution] | value | collect
-
-@func(g)
-def get_game_guesses(z: VT.ZefRef, **defaults):
-    return z >> L[RT.Guess] | value | collect
-
-@func(g)
-def get_game_duel(z: VT.ZefRef, **defaults):
-    return z << O[RT.Game] | collect
-
-@func(g)
-def get_game_completed(z: VT.ZefRef, **defaults):
-    return z >> O[RT.Completed] | maybe_value | collect
-
 schema = gql_schema(g)
 types  = gql_types_dict(schema)
 
@@ -274,7 +218,7 @@ default_list = ["CreateGameReturnType", "SubmitGuessReturnType"] | to_json | col
 # CustomerSpecificResolvers
 specific_resolvers = (
 """def customer_specific_resolvers(ot, ft, bt, rt, fn):
-    from zef.ops import  now, value, collect
+    from zef.ops import now, value, collect
     from zef import RT
     if fn == "id" and now(ft) >> RT.Name | value | collect == "GQL_ID":
        return ("return str(z | to_ezefref | uid | collect)", ["z", "ctx"])
@@ -291,8 +235,7 @@ mutations_dict  = {
     "createGame":   create_game,
     "submitGuess":  submit_guess,
 }
-connect_zef_function_resolvers(types['GQL_Mutation'], mutations_dict)    
-
+connect_zef_function_resolvers(g,types['GQL_Mutation'], mutations_dict)    
 
 
 # Query Handlers
@@ -300,54 +243,36 @@ query_dict  = {
     "getUser":   get_user,
     "getGame":   get_game,
 }
-connect_zef_function_resolvers(types['GQL_Query'], query_dict)    
+connect_zef_function_resolvers(g,types['GQL_Query'], query_dict)    
 
 
 # User Handlers
-# TODO Turn to connect_direct_resolvers_to_delegates
 user_dict  = {
-    "name":   get_user_name,
-    "duels":  get_user_duels,
+    "name":  {"triple": (ET.User, RT.Name, AET.String)},
+    "duels": {"triple": (ET.Duel, RT.Participant, ET.User), "is_out": False},
 }
-connect_zef_function_resolvers(types['GQL_User'], user_dict)   
+connect_delegate_resolvers(g, types['GQL_User'], user_dict)   
 
 
 # Duel Handlers
-# TODO Turn to connect_direct_resolvers_to_delegates
-# duel_dict  = {
-#     "players":   "Participant",
-#     "game":      "Game",
-# }
-# connect_direct_resolvers_to_delegates(g, types['GQL_Duel'], "Duel", duel_dict)
-
 duel_dict  = {
-    "players":   get_duel_players,
-    "games":     get_duel_games,
+    "games":   {"triple": (ET.Duel, RT.Game, ET.Game)},
+    "players": {"triple": (ET.Duel, RT.Participant, ET.User)},
 }
-connect_zef_function_resolvers(types['GQL_Duel'], duel_dict)   
+connect_delegate_resolvers(g, types['GQL_Duel'], duel_dict) 
 
 
 # Game Handlers
-# TODO Turn to connect_direct_resolvers_to_delegates
 game_dict  = {
-    "player":       get_game_player,
-    "creator":      get_game_creator,
-    "solution":     get_game_solution,
-    "duel":         get_game_duel,
-    "guesses":      get_game_guesses,
-    "completed":    get_game_completed,
+    "player":       {"triple": (ET.Game, RT.Player, ET.User)},
+    "creator":      {"triple": (ET.Game, RT.Creator, ET.User)},
+    "solution":     {"triple": (ET.Game, RT.Solution, AET.String)},
+    "duel":         {"triple": (ET.Duel, RT.Game, ET.Game), "is_out": False},
+    "guesses":      {"triple": (ET.Game, RT.Guess, AET.String)},
+    "completed":    {"triple": (ET.Game, RT.Completed, AET.Bool)},
 }
-connect_zef_function_resolvers(types['GQL_Game'], game_dict)   
+connect_delegate_resolvers(g, types['GQL_Game'], game_dict) 
 
-# import os
-# schema_destination = f"{os.getcwd()}/generated_schema.py"
-# resolvers_destination = f"{os.getcwd()}/"
-# schema = make_api(now(schema), schema_destination, resolvers_destination)
-
-if __name__ == "__main__":
-    Effect({
-            "type": FX.GraphQL.StartPlayground,
-            "schema_root": gql_schema(g),
-            "port": 5010,
-    }) | run
-    while True: pass
+g | sync[True]  | run
+g | tag[wordle_tag] | run
+# %%
