@@ -6,6 +6,7 @@ const MAX_CHALLENGES = 5;
 
 type Props = {
   guesses: string[];
+  solution: string;
   currentGuess: string;
   isRevealing?: boolean;
   currentRowClassName: string;
@@ -13,6 +14,7 @@ type Props = {
 
 const Grid = ({
   guesses,
+  solution,
   currentGuess,
   isRevealing,
   currentRowClassName,
@@ -28,6 +30,7 @@ const Grid = ({
         <CompletedRow
           key={i}
           guess={guess}
+          solution={solution}
           isRevealing={isRevealing && guesses.length - 1 === i}
         />
       ))}

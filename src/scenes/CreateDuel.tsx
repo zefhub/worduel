@@ -81,14 +81,14 @@ const CreateDuel: React.FC<CreateDuelProps> = (props) => {
                 htmlFor="word"
                 className="text-lg flex justify-center mb-3"
               >
-                Select a word between 4-8 letters:
+                Select a 5 letter word:
               </label>
               <input
                 {...register("word", { required: true })}
                 id="word"
                 type="text"
                 className="block bg-white w-full border border-slate-300 rounded-md py-3 pl-3 pr-3 shadow-sm focus:outline-none focus:border-sky-500 focus:ring-sky-500 focus:ring-1 sm:text-sm mb-3"
-                placeholder="popsicle"
+                placeholder="guess"
                 disabled={formState.isSubmitting}
                 required
               />
@@ -120,6 +120,7 @@ const CreateDuel: React.FC<CreateDuelProps> = (props) => {
               <Clipboard
                 data-clipboard-text={duelLink}
                 className="bg-black text-white py-3 pl-6 pr-6 shadow-sm rounded-md"
+                onClick={() => toast.success("Link copied to clipboard")}
               >
                 Copy to clipboard
               </Clipboard>

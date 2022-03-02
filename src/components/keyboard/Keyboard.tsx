@@ -8,6 +8,7 @@ type Props = {
   onDelete: () => void;
   onEnter: () => void;
   guesses: string[];
+  solution: string;
   isRevealing?: boolean;
 };
 
@@ -16,9 +17,10 @@ export const Keyboard = ({
   onDelete,
   onEnter,
   guesses,
+  solution,
   isRevealing,
 }: Props) => {
-  const charStatuses = getStatuses(guesses);
+  const charStatuses = getStatuses(guesses, solution);
 
   const onClick = (value: string) => {
     if (value === "ENTER") {

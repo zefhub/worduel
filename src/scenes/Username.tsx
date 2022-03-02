@@ -1,5 +1,6 @@
 import React from "react";
 import { useForm } from "react-hook-form";
+import { useParams } from "react-router-dom";
 import { gql, useMutation } from "@apollo/client";
 import toast from "react-hot-toast";
 import WelcomeBanner from "components/WelcomeBanner";
@@ -16,6 +17,7 @@ export interface UsernameProps {
 }
 
 const Username: React.FC<UsernameProps> = (props) => {
+  const params = useParams();
   const { register, handleSubmit, formState } = useForm();
   const [createUser, { error }] = useMutation(CREATE_USER);
 
@@ -35,7 +37,11 @@ const Username: React.FC<UsernameProps> = (props) => {
               username: values.username,
             })
           );
-          props.setScene("CREATE_DUEL");
+          if (params.gameId) {
+            props.setScene("DUEL");
+          } else {
+            props.setScene("CREATE_DUEL");
+          }
         } else {
           toast.error("Something went wrong");
         }
