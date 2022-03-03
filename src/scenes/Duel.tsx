@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState, useEffect } from "react";
 import { gql, useMutation, useQuery } from "@apollo/client";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import GraphemeSplitter from "grapheme-splitter";
 import { MAX_WORD_LENGTH, MAX_CHALLENGES } from "constants/settings";
@@ -50,7 +50,9 @@ const SUBMIT_GUESS = gql`
   }
 `;
 
-const Duel: React.FC = () => {
+export interface DuelProps {}
+
+const Duel: React.FC<DuelProps> = (props) => {
   const params = useParams();
   const [submitGuess] = useMutation(SUBMIT_GUESS);
   const [acceptDuel] = useMutation(ACCEPT_DUEL);
@@ -98,17 +100,16 @@ const Duel: React.FC = () => {
       const { data } = await submitGuess({
         variables: { gameId: params.gameId, guess: currentGuess },
       });
-      console.log("data", data);
       if (data.submitGuess?.isEligibleGuess === false) {
         toast.error(data.submitGuess.message);
         return;
       }
-      if (data.submitGuess?.completed === true) {
+      if (data.submitGuess?.completed === true || currentGuess === solution) {
         setIsGameWon(true);
         toast.success("You won!");
       }
       setCurrentGuess("");
-      setGuesses([currentGuess, ...guesses]);
+      setGuesses([...guesses, currentGuess]);
     }
   };
 
@@ -164,14 +165,26 @@ const Duel: React.FC = () => {
               isRevealing={isRevealing}
               currentRowClassName={currentRowClass}
             />
-            <Keyboard
-              onChar={onChar}
-              onDelete={onDelete}
-              onEnter={onEnter}
-              guesses={guesses}
-              solution={solution}
-              isRevealing={isRevealing}
-            />
+            {!isGameWon ? (
+              <Keyboard
+                onChar={onChar}
+                onDelete={onDelete}
+                onEnter={onEnter}
+                guesses={guesses}
+                solution={solution}
+                isRevealing={isRevealing}
+              />
+            ) : (
+              <div className="flex justify-center items-center flex-col">
+                <p className="text-lg mb-3">You won!</p>
+                <Link
+                  to="/"
+                  className="bg-black text-white py-3 pl-6 pr-6 shadow-sm rounded-md"
+                >
+                  New Duel
+                </Link>
+              </div>
+            )}
           </div>
         )}
       </div>
