@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { gql, useMutation } from "@apollo/client";
 import Clipboard from "react-clipboard.js";
 import toast from "react-hot-toast";
+import { MAX_WORD_LENGTH } from "constants/settings";
 import WelcomeBanner from "components/WelcomeBanner";
 import Footer from "components/Footer";
 
@@ -43,7 +44,7 @@ const CreateDuel: React.FC<CreateDuelProps> = (props) => {
   const onDuelCreate = async (values: any) => {
     try {
       const user = JSON.parse(window.localStorage.getItem("user") || "{}");
-      if (values.word) {
+      if (values.word && values.word.length === MAX_WORD_LENGTH) {
         // Register duel
         const duel = await createDuel({ variables: { creatorId: user.id } });
 
@@ -63,7 +64,7 @@ const CreateDuel: React.FC<CreateDuelProps> = (props) => {
           "Duel created, please share this link with your opponent"
         );
       } else {
-        toast.error("Please enter a word");
+        toast.error(`Word must be ${MAX_WORD_LENGTH} characters long`);
       }
     } catch (error: any) {
       toast.error(error.message);
