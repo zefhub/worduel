@@ -13,6 +13,7 @@ if __name__ == "__main__":
         "type": FX.GraphQL.StartPlayground,
         "schema_root": gql_schema(g),
         "port": 5010,
+        "open_browser": False,
     }) | run
     while True: sleep(1)
 # %%
