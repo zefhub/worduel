@@ -42,7 +42,7 @@ RUN git config --global --add credential.helper 'store --file=/run/secrets/gitcr
 COPY get_zefdb.sh .
 ADD backend .
 
-RUN --mount=type=secret,id=gitcredentials bash get_zefdb.sh zefDB v0.14.11-dev100 'zef-.*cp310'
+RUN --mount=type=secret,id=gitcredentials bash get_zefdb.sh zefDB v0.14.11-dev101 'zef-.*cp310'
 
 EXPOSE 5010
 
