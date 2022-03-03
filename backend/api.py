@@ -174,7 +174,7 @@ def submit_guess(game_id, guess, g: VT.Graph, **defaults):
         guess_result, discard_letters = make_guess(guess, solution)
         return make_return(guess_result=guess_result, discard_letters=discard_letters, solved=True)
 
-    wordlist_rt = {5: RT.FiveLetters}.get(length(solution), 5)   # Update this
+    wordlist_rt = {5: RT.FiveLetters}.get(length(solution), RT.FiveLetters)   # Update this
     wordlist = g | all[wordlist_rt] | first | target | now | value | split['\n'] | map[to_upper] | collect
     previous_guesses = game >> L[RT.Guess] | value | collect
 
