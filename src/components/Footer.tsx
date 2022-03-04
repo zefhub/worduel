@@ -8,7 +8,16 @@ const Footer: React.FC = () => {
         <img src="/images/zef-logo-black.png" className="ml-2" alt="logo" />
       </div>
       <div className="flex justify-center">
-        <span>See how the logic was implemented in ~30 lines of Python</span>
+        <span>
+          See how the logic was{" "}
+          <a
+            href="https://zef.zefhub.io/blog/wordle-using-zefops"
+            target="_blank"
+            rel="noreferrer"
+          >
+            implemented in ~30 lines of Python
+          </a>
+        </span>
       </div>
     </Fragment>
   );

@@ -181,7 +181,7 @@ const Duel: React.FC<DuelProps> = (props) => {
                   to="/"
                   className="bg-black text-white py-3 pl-6 pr-6 shadow-sm rounded-md"
                 >
-                  New Duel
+                  New game
                 </Link>
               </div>
             )}
