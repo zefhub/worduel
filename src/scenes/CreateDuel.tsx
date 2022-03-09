@@ -58,7 +58,7 @@ const CreateDuel: React.FC<CreateDuelProps> = (props) => {
         });
 
         setDuelLink(
-          `${window.location.protocol}//${window.location.hostname}/duel/${duel.data?.createDuel}/game/${game.data?.createGame.id}`
+          `${window.location.protocol}//${window.location.host}/duel/${duel.data?.createDuel}/game/${game.data?.createGame.id}`
         );
         toast.success(
           "Duel created, please share this link with your opponent"

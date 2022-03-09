@@ -1,8 +1,7 @@
 import { CompletedRow } from "./CompletedRow";
 import { CurrentRow } from "./CurrentRow";
 import { EmptyRow } from "./EmptyRow";
-
-const MAX_CHALLENGES = 5;
+import { MAX_CHALLENGES } from "constants/settings";
 
 type Props = {
   guesses: string[];

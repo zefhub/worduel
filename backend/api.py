@@ -6,7 +6,7 @@ from zef.gql.generate_gql_api import generate_graph_from_file, make_api
 from zef.gql.resolvers_utils import *
 from schema import schema_gql
 
-wordle_tag = "wordle-api-1"
+wordle_tag = "wordle-api-10"
 g = Graph()
 generate_graph_from_file(schema_gql, g)
 
@@ -174,7 +174,8 @@ def submit_guess(game_id, guess, g: VT.Graph, **defaults):
         guess_result, discard_letters = make_guess(guess, solution)
         return make_return(guess_result=guess_result, discard_letters=discard_letters, solved=True)
 
-    wordlist_rt = {5: RT.FiveLetters}.get(length(solution), RT.FiveLetters)   # Update this
+    wordlist_rt = {5: RT.FiveLetters}.get(
+        length(solution), RT.FiveLetters)   # Update this
     wordlist = g | all[wordlist_rt] | first | target | now | value | split['\n'] | map[to_upper] | collect
     previous_guesses = game >> L[RT.Guess] | value | collect
 

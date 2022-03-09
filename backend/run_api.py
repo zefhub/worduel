@@ -5,7 +5,7 @@ from zef.gql import *
 from time import sleep
 import os
 
-worduel_tag = os.getenv('TAG', "worduel-api")
+worduel_tag = os.getenv('TAG', "wordle-api-10")
 if __name__ == "__main__":
     g = Graph(worduel_tag)
     make_primary(g, True)
@@ -15,5 +15,6 @@ if __name__ == "__main__":
         "port": 5010,
         "open_browser": False,
     }) | run
-    while True: sleep(1)
+    while True:
+        sleep(1)
 # %%
