@@ -6,7 +6,7 @@ from zef.gql.generate_gql_api import generate_graph_from_file, make_api
 from zef.gql.resolvers_utils import *
 from schema import schema_gql
 
-wordle_tag = "wordle-api-10"
+wordle_tag = "wordle-api-11"
 g = Graph()
 generate_graph_from_file(schema_gql, g)
 
@@ -34,7 +34,7 @@ words = url | make_request | run | get['response_text'] | collect
 @func(g)
 def create_user(name: str, g: VT.Graph, **defaults) -> str:
     r = GraphDelta([
-        (ET.Player['p1'], RT.Name, name)
+        (ET.User['p1'], RT.Name, name)
     ]) | g | run
 
     return str(r['p1'] | to_ezefref | uid | collect)
@@ -121,9 +121,8 @@ def accept_duel(duel_id: str, player_id: str, g: VT.Graph, **defaults) -> str:
 
     return ""
 
+
 # submitGuess(gameId: ID, guess: String): SubmitGuessReturnType
-
-
 @func(g)
 def submit_guess(game_id, guess, g: VT.Graph, **defaults):
     def make_return(is_eligible: bool = True, solved: bool = False, failed: bool = False, guess_result: list = [], message: str = "", discard_letters: list = []):
@@ -208,8 +207,6 @@ def submit_guess(game_id, guess, g: VT.Graph, **defaults):
 
 #############--Querys--###############
 # getUser(usedId: ID): User
-
-
 @func(g)
 def get_user(user_id: str, g: VT.Graph, **defaults):
     return now(g[user_id])
@@ -220,13 +217,39 @@ def get_user(user_id: str, g: VT.Graph, **defaults):
 def get_game(game_id, g: VT.Graph, **defaults):
     return now(g[game_id])
 
+# getDuel(duelId: ID): Duel
+@func(g)
+def get_duel(duel_id, g: VT.Graph, **defaults):
+    return now(g[duel_id])
 
+# getRandomWord(length: Int): String
+@func(g)
+def get_random_word(length: int, g: VT.Graph, **defaults):
+    length = 5
+    wordlist_rt = {5: RT.FiveLetters}.get(
+        length, RT.FiveLetters)   
+
+    return  random_pick(g | all[wordlist_rt] | first | target | now | value | split['\n'] | map[to_upper] | collect)
+
+
+
+#############--Duel Special Logic--###############
+@func(g)
+def duel_current_game(z: VT.ZefRef, g: VT.Graph, **defaults):
+    return z >> L[RT.Game] | last | collect
+
+@func(g)
+def duel_current_score(z: VT.ZefRef, g: VT.Graph, **defaults):
+    # TODO change this
+    return z >> L[RT.Participant] | map[lambda u: {"userName": value(u >> RT.Name), "score": random_pick("1234567890")}] | collect
+    
+
+#----------------------------------------------------------------
 schema = gql_schema(g)
 types = gql_types_dict(schema)
 
 # DefaultResolversList
-default_list = ["CreateGameReturnType",
-                "SubmitGuessReturnType"] | to_json | collect
+default_list = ["CreateGameReturnType", "SubmitGuessReturnType", "Score"] | to_json | collect
 (schema, RT.DefaultResolversList, default_list) | g | run
 
 
@@ -255,8 +278,10 @@ connect_zef_function_resolvers(g, types['GQL_Mutation'], mutations_dict)
 
 # Query Handlers
 query_dict = {
-    "getUser":   get_user,
-    "getGame":   get_game,
+    "getUser":          get_user,
+    "getGame":          get_game,
+    "getDuel":          get_duel,
+    "getRandomWord":    get_random_word,
 }
 connect_zef_function_resolvers(g, types['GQL_Query'], query_dict)
 
@@ -275,7 +300,12 @@ duel_dict = {
     "players": {"triple": (ET.Duel, RT.Participant, ET.User)},
 }
 connect_delegate_resolvers(g, types['GQL_Duel'], duel_dict)
+duel_dict = {
+    "currentGame":      duel_current_game,
+    "currentScore":     duel_current_score,
 
+}
+connect_zef_function_resolvers(g, types['GQL_Duel'], duel_dict)
 
 # Game Handlers
 game_dict = {
@@ -290,4 +320,3 @@ connect_delegate_resolvers(g, types['GQL_Game'], game_dict)
 
 g | sync[True] | run
 g | tag[wordle_tag] | run
-# %%

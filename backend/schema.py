@@ -2,6 +2,8 @@ schema_gql = """
 type Query {
   getUser(userId: ID): User
   getGame(gameId: ID): Game
+  getDuel(duelId: ID): Duel
+  getRandomWord(length: Int): String
 }
 
 type Mutation {
@@ -32,6 +34,13 @@ type Duel {
  id: ID
  players: [User]
  games:   [Game]
+ currentGame: Game
+ currentScore: [Score]
+}
+
+type Score {
+  userName: String
+  score: Int
 }
 
 type SubmitGuessReturnType {
