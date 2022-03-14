@@ -9,7 +9,7 @@ const WelcomeBanner = () => {
           <p>1. Enter your name</p>
           <p>2. Select a word</p>
           <p>3. Send the link to your friend</p>
-          <p>4. Start dueling</p>
+          <p>4. Highest score after 3 rounds wins</p>
         </div>
       </div>
     </Fragment>

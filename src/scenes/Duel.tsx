@@ -3,37 +3,62 @@ import React, { useState, useEffect } from "react";
 import { gql, useMutation, useQuery } from "@apollo/client";
 import { useParams, Link } from "react-router-dom";
 import toast from "react-hot-toast";
+import Clipboard from "react-clipboard.js";
 import GraphemeSplitter from "grapheme-splitter";
 import { MAX_WORD_LENGTH, MAX_CHALLENGES } from "constants/settings";
 import { unicodeLength } from "lib/words";
-import GameBanner from "components/GameBanner";
+import { getUser } from "lib/storage";
 import Grid from "components/grid/Grid";
 import { Keyboard } from "components/keyboard/Keyboard";
 import Footer from "components/Footer";
 import Loading from "components/Loading";
 
-const GET_GAME = gql`
-  query getGame($gameId: ID) {
-    getGame(gameId: $gameId) {
-      id
-      completed
-      solution
-      guesses
-      creator {
-        id
-        name
-      }
-      player {
-        id
-        name
-      }
-    }
-  }
-`;
-
 const ACCEPT_DUEL = gql`
   mutation acceptDuel($duelId: ID, $playerId: ID) {
     acceptDuel(duelId: $duelId, playerId: $playerId)
+  }
+`;
+
+const GET_DUEL = gql`
+  query getDuel($duelId: ID) {
+    getDuel(duelId: $duelId) {
+      id
+      players {
+        id
+      }
+      games {
+        id
+        completed
+        solution
+        guesses
+        creator {
+          id
+          name
+        }
+        player {
+          id
+          name
+        }
+      }
+      currentGame {
+        id
+        completed
+        solution
+        guesses
+        creator {
+          id
+          name
+        }
+        player {
+          id
+          name
+        }
+      }
+      currentScore {
+        userName
+        score
+      }
+    }
   }
 `;
 
@@ -56,9 +81,11 @@ const Duel: React.FC<DuelProps> = (props) => {
   const params = useParams();
   const [submitGuess] = useMutation(SUBMIT_GUESS);
   const [acceptDuel] = useMutation(ACCEPT_DUEL);
-  const { data: game, loading: getGameLoading } = useQuery(GET_GAME, {
-    variables: { gameId: params.gameId },
+  const { data: duel, loading: getDuelLoading } = useQuery(GET_DUEL, {
+    variables: { duelId: params.duelId },
+    pollInterval: 3000,
   });
+  console.log("duel", duel);
 
   const [solution, setSolution] = useState("");
   const [currentGuess, setCurrentGuess] = useState("");
@@ -68,16 +95,16 @@ const Duel: React.FC<DuelProps> = (props) => {
   const [isGameWon, setIsGameWon] = useState(false);
 
   useEffect(() => {
-    if (game?.getGame?.solution) {
-      setSolution(game.getGame.solution);
+    if (duel && duel.getDuel.currentGame?.solution) {
+      setSolution(duel.getDuel.currentGame.solution);
     }
-    if (game?.getGame?.guesses) {
-      setGuesses(game.getGame.guesses);
+    if (duel && duel.getDuel.currentGame?.guesses) {
+      setGuesses(duel.getDuel.currentGame.guesses);
     }
-    if (game?.getGame?.completed) {
-      setIsGameWon(game.getGame.completed);
+    if (duel && duel.getDuel.currentGame?.completed) {
+      setIsGameWon(duel.getDuel.currentGame.completed);
     }
-  }, [game]);
+  }, [duel]);
 
   const onChar = (value: string) => {
     if (
@@ -98,7 +125,10 @@ const Duel: React.FC<DuelProps> = (props) => {
   const onEnter = async () => {
     if (currentGuess.length > 0) {
       const { data } = await submitGuess({
-        variables: { gameId: params.gameId, guess: currentGuess },
+        variables: {
+          gameId: duel.getDuel.currentGame?.id,
+          guess: currentGuess,
+        },
       });
       if (data.submitGuess?.isEligibleGuess === false) {
         toast.error(data.submitGuess.message);
@@ -121,7 +151,7 @@ const Duel: React.FC<DuelProps> = (props) => {
           duelId: params.duelId,
           playerId: user.id,
         },
-        refetchQueries: [GET_GAME],
+        refetchQueries: [GET_DUEL],
       });
       toast.success("Duel accepted!");
     } catch (error: any) {
@@ -130,33 +160,62 @@ const Duel: React.FC<DuelProps> = (props) => {
     }
   };
 
-  if (getGameLoading) {
+  if (getDuelLoading) {
     return <Loading />;
   }
 
   return (
     <div>
-      <GameBanner name={game && game.getGame?.creator.name} />
+      <div className="flex justify-center flex-col items-center">
+        <h1 className="text-4xl mb-3">Worduel</h1>
+        <h4>Send this link to your friend:</h4>
+        <Clipboard
+          data-clipboard-text={`${window.location.protocol}//${window.location.host}/duel/${params.duelId}`}
+          className="py-3 rounded-md text-green-400"
+          onClick={() => toast.success("Link copied to clipboard")}
+        >
+          worduel.zefhub.io/duel/{params.duelId}
+        </Clipboard>
+      </div>
+      <div className="flex justify-center">
+        <div className="grid grid-cols-3 w-30">
+          <h4>{duel.getDuel.currentScore[0]?.userName}</h4>
+          <span className="flex justify-center">
+            {duel.getDuel.currentScore[0]?.score}
+            &nbsp;:&nbsp;
+            {duel.getDuel.currentScore[1]?.score}
+          </span>
+          <h4 className="flex justify-end">
+            {duel.getDuel.currentScore[1]?.userName || "-"}
+          </h4>
+        </div>
+      </div>
       <div className="flex justify-center mb-12">
-        {game && !game.getGame?.player ? (
-          <div className="w-30 card">
-            <p className="text-lg flex justify-center mb-5">
-              Do you accept this duel?
-            </p>
-            <div className="flex justify-center">
-              <button
-                type="button"
-                className="bg-black text-white py-3 pl-6 pr-6 shadow-sm rounded-md"
-                onClick={onDuelAccept}
-              >
-                Accept
-              </button>
+        {duel &&
+          !duel.getDuel.currentGame?.player &&
+          duel.getDuel.currentGame.creator?.id !== getUser().id && (
+            <div className="w-30 card">
+              <p className="text-lg flex justify-center mb-5">
+                Do you accept this duel?
+              </p>
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  className="bg-black text-white py-3 pl-6 pr-6 shadow-sm rounded-md"
+                  onClick={onDuelAccept}
+                >
+                  Accept
+                </button>
+              </div>
             </div>
-          </div>
-        ) : (
+          )}
+        {((duel && duel.getDuel.currentGame?.player) ||
+          duel.getDuel.currentGame.creator?.id === getUser().id) && (
           <div className="w-30 card">
             <p className="text-lg flex justify-center mb-3">
-              Enter your guess:
+              {duel.getDuel.currentGame.creator?.id === getUser().id
+                ? "Player's turn"
+                : "Enter your guess:"}
             </p>
             <Grid
               guesses={guesses}
@@ -165,26 +224,27 @@ const Duel: React.FC<DuelProps> = (props) => {
               isRevealing={isRevealing}
               currentRowClassName={currentRowClass}
             />
-            {!isGameWon ? (
-              <Keyboard
-                onChar={onChar}
-                onDelete={onDelete}
-                onEnter={onEnter}
-                guesses={guesses}
-                solution={solution}
-                isRevealing={isRevealing}
-              />
-            ) : (
-              <div className="flex justify-center items-center flex-col">
-                <p className="text-lg mb-3">You won!</p>
-                <Link
-                  to="/"
-                  className="bg-black text-white py-3 pl-6 pr-6 shadow-sm rounded-md"
-                >
-                  New game
-                </Link>
-              </div>
-            )}
+            {duel.getDuel.currentGame.player?.id === getUser().id &&
+              !duel.getDuel.currentGame?.completed && (
+                <Keyboard
+                  onChar={onChar}
+                  onDelete={onDelete}
+                  onEnter={onEnter}
+                  guesses={guesses}
+                  solution={solution}
+                  isRevealing={isRevealing}
+                />
+              )}
+            {duel &&
+              duel.getDuel.currentGame?.completed &&
+              duel.getDuel.currentGame.creator?.id !== getUser().id && (
+                <div className="flex justify-center items-center flex-col mt-6 mb-6">
+                  <p className="text-lg mb-3">You won!</p>
+                  <button className="bg-black text-white py-3 pl-6 pr-6 shadow-sm rounded-md">
+                    New game
+                  </button>
+                </div>
+              )}
           </div>
         )}
       </div>

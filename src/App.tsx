@@ -7,22 +7,27 @@ import Loading from "components/Loading";
 import UsernameScene from "scenes/Username";
 import CreateDuelScene from "scenes/CreateDuel";
 import DuelScene from "scenes/Duel";
-import DuelSpectatorScene from "scenes/DuelSpectator";
 
 const SCENES = {
   USERNAME: "USERNAME",
   CREATE_DUEL: "CREATE_DUEL",
   DUEL: "DUEL",
-  DUEL_SPECTATOR: "DUEL_SPECTATOR",
 };
 
-const GET_GAME = gql`
-  query getGame($gameId: ID) {
-    getGame(gameId: $gameId) {
+const GET_DUEL = gql`
+  query getDuel($duelId: ID) {
+    getDuel(duelId: $duelId) {
       id
-      creator {
+      currentGame {
         id
-        name
+        creator {
+          id
+          name
+        }
+        player {
+          id
+          name
+        }
       }
     }
   }
@@ -30,9 +35,9 @@ const GET_GAME = gql`
 
 const App: React.FC = () => {
   const params = useParams();
-  const { data: game } = useQuery(GET_GAME, {
+  const { data: duel } = useQuery(GET_DUEL, {
     variables: {
-      gameId: params.gameId,
+      duelId: params.duelId,
     },
   });
 
@@ -48,15 +53,9 @@ const App: React.FC = () => {
       user = JSON.parse(window.localStorage.getItem("user") || "{}");
     }
 
-    if (params.gameId && game && game.getGame.creator?.id === user.id) {
-      setScene(SCENES.DUEL_SPECTATOR);
-      setLoading(false);
-      return;
-    }
-
     // Check for match ID
     if (params && params.duelId) {
-      if (localStorage.getItem("user")) {
+      if (user && user.id) {
         setScene(SCENES.DUEL);
         setLoading(false);
         return;
@@ -77,7 +76,7 @@ const App: React.FC = () => {
 
     setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [game]);
+  }, [duel]);
 
   const getScene = () => {
     switch (scene) {
@@ -87,8 +86,6 @@ const App: React.FC = () => {
         return <CreateDuelScene setScene={setScene} />;
       case SCENES.DUEL:
         return <DuelScene />;
-      case SCENES.DUEL_SPECTATOR:
-        return <DuelSpectatorScene />;
       default:
         return <h1>Error</h1>;
     }

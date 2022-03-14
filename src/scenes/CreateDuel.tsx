@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import { gql, useMutation } from "@apollo/client";
+import { gql, useMutation, useApolloClient } from "@apollo/client";
+import { useNavigate } from "react-router-dom";
 import Clipboard from "react-clipboard.js";
 import toast from "react-hot-toast";
 import { MAX_WORD_LENGTH } from "constants/settings";
@@ -23,23 +24,31 @@ const CREATE_GAME = gql`
   }
 `;
 
+const GET_RANDOM_WORD = gql`
+  query getRandomWord($length: Int) {
+    getRandomWord(length: $length)
+  }
+`;
+
 export interface CreateDuelProps {
   setScene: (screen: string) => void;
 }
 
 const CreateDuel: React.FC<CreateDuelProps> = (props) => {
-  const { register, handleSubmit, formState } = useForm();
-  const [createDuel, { error: createDuelError }] = useMutation(CREATE_DUEL);
-  const [createGame, { error: createGameError }] = useMutation(CREATE_GAME);
+  const navigate = useNavigate();
+  const client = useApolloClient();
+  const [duelLink, setDuelLink] = useState<string>("");
 
+  const { register, handleSubmit, formState, setValue } = useForm();
+  const [createDuel, { error: createDuelError }] = useMutation(CREATE_DUEL);
   if (createDuelError) {
     toast.error(createDuelError.message);
   }
+
+  const [createGame, { error: createGameError }] = useMutation(CREATE_GAME);
   if (createGameError) {
     toast.error(createGameError.message);
   }
-
-  const [duelLink, setDuelLink] = useState<string>("");
 
   const onDuelCreate = async (values: any) => {
     try {
@@ -49,7 +58,7 @@ const CreateDuel: React.FC<CreateDuelProps> = (props) => {
         const duel = await createDuel({ variables: { creatorId: user.id } });
 
         // Register game
-        const game = await createGame({
+        await createGame({
           variables: {
             solution: values.word.toLocaleUpperCase(),
             duelId: duel.data?.createDuel,
@@ -58,16 +67,28 @@ const CreateDuel: React.FC<CreateDuelProps> = (props) => {
         });
 
         setDuelLink(
-          `${window.location.protocol}//${window.location.host}/duel/${duel.data?.createDuel}/game/${game.data?.createGame.id}`
+          `${window.location.protocol}//${window.location.host}/duel/${duel.data?.createDuel}`
         );
         toast.success(
           "Duel created, please share this link with your opponent"
         );
+        navigate(`/duel/${duel.data?.createDuel}`);
       } else {
         toast.error(`Word must be ${MAX_WORD_LENGTH} characters long`);
       }
     } catch (error: any) {
       toast.error(error.message);
+    }
+  };
+
+  const onGetWord = async () => {
+    const { data } = await client.query({
+      query: GET_RANDOM_WORD,
+      variables: { length: MAX_WORD_LENGTH },
+      fetchPolicy: "network-only",
+    });
+    if (data && data.getRandomWord) {
+      setValue("word", data.getRandomWord);
     }
   };
 
@@ -94,6 +115,14 @@ const CreateDuel: React.FC<CreateDuelProps> = (props) => {
                 required
               />
               <div className="flex justify-center">
+                <button
+                  type="button"
+                  className="bg-black opacity-50 text-white py-3 pl-6 pr-6 shadow-sm rounded-md mr-6"
+                  disabled={formState.isSubmitting}
+                  onClick={onGetWord}
+                >
+                  I'm lazy
+                </button>
                 <button
                   type="submit"
                   className="bg-black text-white py-3 pl-6 pr-6 shadow-sm rounded-md"
