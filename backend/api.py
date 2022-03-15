@@ -6,7 +6,7 @@ from zef.gql.generate_gql_api import generate_graph_from_file, make_api
 from zef.gql.resolvers_utils import *
 from schema import schema_gql
 
-wordle_tag = "worduel-api"
+wordle_tag = "worduel/main"
 g = Graph()
 generate_graph_from_file(schema_gql, g)
 
@@ -327,3 +327,4 @@ connect_delegate_resolvers(g, types['GQL_Game'], game_dict)
 
 g | sync[True] | run
 g | tag[wordle_tag] | run
+# %%
