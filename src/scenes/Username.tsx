@@ -37,7 +37,7 @@ const Username: React.FC<UsernameProps> = (props) => {
               username: values.username,
             })
           );
-          if (params.gameId) {
+          if (params.duelId) {
             props.setScene("DUEL");
           } else {
             props.setScene("CREATE_DUEL");

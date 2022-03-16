@@ -83,9 +83,9 @@ const Duel: React.FC<DuelProps> = (props) => {
   const [acceptDuel] = useMutation(ACCEPT_DUEL);
   const { data: duel, loading: getDuelLoading } = useQuery(GET_DUEL, {
     variables: { duelId: params.duelId },
+    fetchPolicy: "network-only",
     pollInterval: 3000,
   });
-  console.log("duel", duel);
 
   const [solution, setSolution] = useState("");
   const [currentGuess, setCurrentGuess] = useState("");
