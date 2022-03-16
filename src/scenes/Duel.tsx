@@ -179,14 +179,14 @@ const Duel: React.FC<DuelProps> = (props) => {
       </div>
       <div className="flex justify-center">
         <div className="grid grid-cols-3 w-30">
-          <h4>{duel.getDuel.currentScore[0]?.userName}</h4>
+          <h4>{duel && duel.getDuel.currentScore[0]?.userName}</h4>
           <span className="flex justify-center">
-            {duel.getDuel.currentScore[0]?.score}
+            {duel && duel.getDuel.currentScore[0]?.score}
             &nbsp;:&nbsp;
-            {duel.getDuel.currentScore[1]?.score}
+            {duel && duel.getDuel.currentScore[1]?.score}
           </span>
           <h4 className="flex justify-end">
-            {duel.getDuel.currentScore[1]?.userName || "-"}
+            {(duel && duel.getDuel.currentScore[1]?.userName) || "-"}
           </h4>
         </div>
       </div>
