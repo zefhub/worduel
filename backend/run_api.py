@@ -5,10 +5,10 @@ from zef.gql import *
 from time import sleep
 import os
 
-worduel_tag = os.getenv('TAG', "wordle-api-10")
+worduel_tag = os.getenv('TAG', "worduel/main")
 if __name__ == "__main__":
     g = Graph(worduel_tag)
-    make_primary(g, True)
+    # make_primary(g, True)
     Effect({
         "type": FX.GraphQL.StartPlayground,
         "schema_root": gql_schema(g),

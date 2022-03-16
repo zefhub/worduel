@@ -6,7 +6,7 @@ from zef.gql.generate_gql_api import generate_graph_from_file, make_api
 from zef.gql.resolvers_utils import *
 from schema import schema_gql
 
-wordle_tag = "wordle-api-11"
+wordle_tag = "worduel/main"
 g = Graph()
 generate_graph_from_file(schema_gql, g)
 
@@ -240,10 +240,17 @@ def duel_current_game(z: VT.ZefRef, g: VT.Graph, **defaults):
 
 @func(g)
 def duel_current_score(z: VT.ZefRef, g: VT.Graph, **defaults):
-    # TODO change this
-    return z >> L[RT.Participant] | map[lambda u: {"userName": value(u >> RT.Name), "score": random_pick("1234567890")}] | collect
+    players = dict(z >> L[RT.Participant] | map[lambda u: (value(u >> RT.Name),0)] | collect) 
+    def game_score(game):
+        if value(game >> RT.Completed):
+            player_name = game >> RT.Player >> RT.Name | value | collect
+            solution = game >> RT.Solution | value | collect
+            guesses = game >> L[RT.Guess] | collect
+            if guesses | last | value | to_upper | equals[solution] | collect:
+                players[player_name] += 7 - len(guesses)
+    z >> L[RT.Game] | for_each[game_score]
+    return list(players.items()) | map[lambda kv: {"userName": kv[0], "score": kv[1]}] | collect
     
-
 #----------------------------------------------------------------
 schema = gql_schema(g)
 types = gql_types_dict(schema)
@@ -320,3 +327,4 @@ connect_delegate_resolvers(g, types['GQL_Game'], game_dict)
 
 g | sync[True] | run
 g | tag[wordle_tag] | run
+# %%
