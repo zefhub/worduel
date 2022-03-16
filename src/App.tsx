@@ -48,7 +48,7 @@ const App: React.FC = () => {
     if (params.duelId) {
       getDuel();
     }
-  }, [params.duelId]);
+  }, [params.duelId, getDuel]);
 
   useEffect(() => {
     let user: any = {};
