@@ -1,10 +1,5 @@
 import React from "react";
-import {
-  useForm,
-  SubmitHandler,
-  FieldValues,
-  SubmitErrorHandler,
-} from "react-hook-form";
+import { useForm, FieldValues } from "react-hook-form";
 import { gql, useApolloClient } from "@apollo/client";
 import { MAX_WORD_LENGTH } from "constants/settings";
 
@@ -15,7 +10,7 @@ const GET_RANDOM_WORD = gql`
 `;
 
 export interface CreateDuelProps {
-  onSubmit: () => {};
+  onSubmit: (values: FieldValues) => {};
 }
 
 const CreateDuel: React.FC<CreateDuelProps> = (props) => {
