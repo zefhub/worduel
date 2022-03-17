@@ -2,7 +2,7 @@ import React, { memo } from "react";
 
 const Loading: React.FC = () => {
   return (
-    <div className="flex justify-center items-center h-screen">
+    <div className="flex justify-center items-center">
       <svg
         role="status"
         className="mr-2 w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600"

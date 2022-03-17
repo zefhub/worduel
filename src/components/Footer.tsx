@@ -14,6 +14,7 @@ const Footer: React.FC = () => {
             href="https://zef.zefhub.io/blog/wordle-using-zefops"
             target="_blank"
             rel="noreferrer"
+            className="underline"
           >
             implemented in ~30 lines of Python
           </a>

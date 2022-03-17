@@ -230,7 +230,7 @@ const Duel: React.FC<DuelProps> = () => {
           </h4>
         </div>
       </div>
-      <div className="flex justify-center mb-12">
+      <div className="flex justify-center mb-8">
         {duel &&
           !duel.getDuel.currentGame?.player &&
           duel.getDuel.currentGame.creator?.id !== getUser().id && (
@@ -301,6 +301,11 @@ const Duel: React.FC<DuelProps> = () => {
               )}
           </div>
         )}
+      </div>
+      <div className="flex justify-center mb-8">
+        <Link to="/" className="underline" target="_blank">
+          Create new duel
+        </Link>
       </div>
       <Footer />
     </div>

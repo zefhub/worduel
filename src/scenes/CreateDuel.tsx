@@ -1,11 +1,13 @@
 import React from "react";
-import { gql, useMutation } from "@apollo/client";
-import { useNavigate } from "react-router-dom";
+import { gql, useMutation, useQuery } from "@apollo/client";
+import { useNavigate, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { MAX_WORD_LENGTH } from "constants/settings";
+import { getUser } from "lib/storage";
 import CreateDuelForm from "forms/CreateDuel";
 import WelcomeBanner from "components/WelcomeBanner";
 import Footer from "components/Footer";
+import Loading from "components/Loading";
 
 const CREATE_DUEL = gql`
   mutation createDuel($creatorId: ID!) {
@@ -19,6 +21,20 @@ const CREATE_GAME = gql`
       id
       message
       success
+    }
+  }
+`;
+
+const GET_USER = gql`
+  query getUser($userId: ID!) {
+    getUser(userId: $userId) {
+      id
+      duels {
+        id
+        players {
+          name
+        }
+      }
     }
   }
 `;
@@ -39,6 +55,10 @@ const CreateDuel: React.FC<CreateDuelProps> = (props) => {
   if (createGameError) {
     toast.error(createGameError.message);
   }
+
+  const { data: user, loading: userLoading } = useQuery(GET_USER, {
+    variables: { userId: getUser().id },
+  });
 
   const onDuelCreate = async (values: any) => {
     try {
@@ -71,10 +91,26 @@ const CreateDuel: React.FC<CreateDuelProps> = (props) => {
   return (
     <div>
       <WelcomeBanner />
-      <div className="flex justify-center mb-12">
+      <div className="flex justify-center mb-8">
         <div className="w-30 card">
           <CreateDuelForm onSubmit={onDuelCreate} />
         </div>
+      </div>
+      <div className="flex flex-col items-center justify-center mb-12">
+        <h2 className="text-xl mb-4 font-bold">Recent games</h2>
+        {userLoading ? (
+          <Loading />
+        ) : (
+          <ul>
+            {user?.getUser?.duels?.map((duel: any) => (
+              <li key={duel.id} className="mb-2">
+                <Link to={`/duel/${duel.id}`} className="underline">
+                  {duel.players.map((player: any) => player.name).join(" vs ")}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
       <Footer />
     </div>
