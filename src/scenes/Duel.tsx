@@ -214,7 +214,7 @@ const Duel: React.FC<DuelProps> = () => {
           className="py-3 rounded-md text-green-400"
           onClick={() => toast.success("Link copied to clipboard")}
         >
-          worduel.zefhub.io/duel/{params.duelId}
+          {window.location.host}/duel/{params.duelId}
         </Clipboard>
       </div>
       <div className="flex justify-center">
