@@ -97,7 +97,7 @@ const CreateDuel: React.FC<CreateDuelProps> = (props) => {
         </div>
       </div>
       <div className="flex flex-col items-center justify-center mb-12">
-        <h2 className="text-xl mb-4 font-bold">Recent games</h2>
+        <h2 className="text-xl mb-4 font-bold">Recent duels</h2>
         {userLoading ? (
           <Loading />
         ) : (
