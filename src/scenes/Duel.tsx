@@ -200,7 +200,14 @@ const Duel: React.FC<DuelProps> = () => {
     }
   };
 
-  if (getDuelLoading) {
+  const getDuel = () => {
+    if (duel && duel.getDuel) {
+      return duel.getDuel;
+    }
+    return {};
+  };
+
+  if (!duel || getDuelLoading) {
     return <Loading />;
   }
 
@@ -219,21 +226,20 @@ const Duel: React.FC<DuelProps> = () => {
       </div>
       <div className="flex justify-center">
         <div className="grid grid-cols-3 w-30">
-          <h4>{duel && duel.getDuel.currentScore[0]?.userName}</h4>
+          <h4>{getDuel().currentScore[0]?.userName}</h4>
           <span className="flex justify-center">
-            {duel && duel.getDuel.currentScore[0]?.score}
+            {getDuel().currentScore[0]?.score}
             &nbsp;:&nbsp;
-            {duel && duel.getDuel.currentScore[1]?.score}
+            {getDuel().currentScore[1]?.score}
           </span>
           <h4 className="flex justify-end">
-            {(duel && duel.getDuel.currentScore[1]?.userName) || "-"}
+            {getDuel().currentScore[1]?.userName || "-"}
           </h4>
         </div>
       </div>
       <div className="flex justify-center mb-8">
-        {duel &&
-          !duel.getDuel.currentGame?.player &&
-          duel.getDuel.currentGame.creator?.id !== getUser().id && (
+        {!getDuel().currentGame?.player &&
+          getDuel().currentGame.creator?.id !== getUser().id && (
             <div className="w-30 card">
               <p className="text-lg flex justify-center mb-5">
                 Do you accept this duel?
@@ -249,12 +255,12 @@ const Duel: React.FC<DuelProps> = () => {
               </div>
             </div>
           )}
-        {((duel && duel.getDuel.currentGame?.player) ||
-          duel.getDuel.currentGame.creator?.id === getUser().id) && (
+        {(getDuel().currentGame?.player ||
+          getDuel().currentGame.creator?.id === getUser().id) && (
           <div className="w-30 card">
             <p className="text-lg flex justify-center mb-3">
-              {duel.getDuel.currentGame.creator?.id === getUser().id
-                ? "Player's turn"
+              {getDuel().currentGame.creator?.id === getUser().id
+                ? `${getDuel().currentGame?.player?.name || "Player"}'s turn`
                 : "Enter your guess:"}
             </p>
             <Grid
@@ -264,8 +270,8 @@ const Duel: React.FC<DuelProps> = () => {
               isRevealing={false}
               currentRowClassName=""
             />
-            {duel.getDuel.currentGame.player?.id === getUser().id &&
-              !duel.getDuel.currentGame?.completed && (
+            {getDuel().currentGame.player?.id === getUser().id &&
+              !getDuel().currentGame?.completed && (
                 <Keyboard
                   onChar={onChar}
                   onDelete={onDelete}
@@ -275,28 +281,29 @@ const Duel: React.FC<DuelProps> = () => {
                   isRevealing={false}
                 />
               )}
-            {duel && duel.getDuel.currentGame?.completed && (
+            {getDuel().currentGame?.completed && (
               <div>
-                {duel.getDuel.currentGame.guesses.includes(
-                  duel.getDuel.currentGame.solution
+                {getDuel().currentGame.guesses.includes(
+                  getDuel().currentGame.solution
                 ) ? (
-                  <h1 className="text-3xl font-bold text-green-600 mb-5 text-center">
+                  <h1 className="text-3xl font-bold text-green-600 mb-1 text-center">
                     Game won!
                   </h1>
                 ) : (
-                  <h1 className="text-3xl font-bold text-red-600 mb-5 text-center">
+                  <h1 className="text-3xl font-bold text-red-600 mb-1 text-center">
                     Game lost!
                   </h1>
                 )}
-
-                {duel.getDuel.currentGame.creator?.id === getUser().id && (
+                <div className="flex justify-center mb-5">
+                  <h5>Solution: {getDuel().currentGame?.solution}</h5>
+                </div>
+                {getDuel().currentGame.creator?.id === getUser().id && (
                   <p className="text-center">Please stand by for new game.</p>
                 )}
               </div>
             )}
-            {duel &&
-              duel.getDuel.currentGame?.completed &&
-              duel.getDuel.currentGame.creator?.id !== getUser().id && (
+            {getDuel().currentGame?.completed &&
+              getDuel().currentGame.creator?.id !== getUser().id && (
                 <CreateDuelForm onSubmit={onGameCreate} />
               )}
           </div>
