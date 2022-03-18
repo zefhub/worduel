@@ -32,7 +32,17 @@ const GET_USER = gql`
       duels {
         id
         players {
+          id
           name
+        }
+        currentGame {
+          player {
+            id
+          }
+        }
+        currentScore {
+          userName
+          score
         }
       }
     }
@@ -105,7 +115,27 @@ const CreateDuel: React.FC<CreateDuelProps> = (props) => {
             {user?.getUser?.duels?.map((duel: any) => (
               <li key={duel.id} className="mb-2">
                 <Link to={`/duel/${duel.id}`} className="underline">
-                  {duel.players.map((player: any) => player.name).join(" vs ")}
+                  <span
+                    className={
+                      duel.currentGame.player?.id === duel.players[0]?.id
+                        ? "font-bold"
+                        : ""
+                    }
+                  >
+                    {duel.players[0].name} ({duel.currentScore[0]?.score})
+                  </span>
+                  &nbsp;vs&nbsp;
+                  {duel.players[1] && (
+                    <span
+                      className={
+                        duel.currentGame.player?.id === duel.players[1]?.id
+                          ? "font-bold"
+                          : ""
+                      }
+                    >
+                      {duel.players[1]?.name} ({duel.currentScore[1]?.score})
+                    </span>
+                  )}
                 </Link>
               </li>
             ))}
