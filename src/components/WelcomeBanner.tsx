@@ -3,7 +3,13 @@ import { Fragment } from "react";
 const WelcomeBanner = () => {
   return (
     <Fragment>
-      <h1 className="flex justify-center text-4xl mb-5">Welcome to Worduel</h1>
+      <div className="flex justify-center mb-6">
+        <img
+          src="/images/worduel-logo-lightsaber.png"
+          alt="logo"
+          className="w-20"
+        />
+      </div>
       <div className="flex justify-center mb-6">
         <div className="">
           <p>1. Enter your name</p>
