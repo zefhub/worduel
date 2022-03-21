@@ -212,8 +212,6 @@ const Duel: React.FC<DuelProps> = () => {
     return <Loading />;
   }
 
-  console.log(getDuel());
-
   return (
     <div>
       <div className="flex justify-center flex-col items-center">
