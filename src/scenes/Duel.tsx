@@ -318,6 +318,7 @@ const Duel: React.FC<DuelProps> = () => {
           </div>
         )}
       </div>
+      {/*
       <div className="flex justify-center mb-5">
         <table className="table-auto">
           <thead>
@@ -340,6 +341,7 @@ const Duel: React.FC<DuelProps> = () => {
           </tbody>
         </table>
       </div>
+      */}
       <div className="flex justify-center mb-8">
         <Link to="/" className="underline" target="_blank">
           Create new duel
