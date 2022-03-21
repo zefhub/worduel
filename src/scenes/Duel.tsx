@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { gql, useMutation, useQuery } from "@apollo/client";
 import { useParams, Link } from "react-router-dom";
 import toast from "react-hot-toast";
+import { nanoid } from "nanoid";
 import Clipboard from "react-clipboard.js";
 import GraphemeSplitter from "grapheme-splitter";
 import { MAX_WORD_LENGTH, MAX_CHALLENGES } from "constants/settings";
@@ -211,14 +212,24 @@ const Duel: React.FC<DuelProps> = () => {
     return <Loading />;
   }
 
+  console.log(getDuel());
+
   return (
     <div>
       <div className="flex justify-center flex-col items-center">
-        <h1 className="text-4xl mb-3">Worduel</h1>
+        <div className="flex justify-center mb-6">
+          <Link to="/">
+            <img
+              src="/images/worduel-logo-lightsaber.png"
+              alt="logo"
+              className="w-15"
+            />
+          </Link>
+        </div>
         <h4>Send this link to your friend:</h4>
         <Clipboard
           data-clipboard-text={`${window.location.protocol}//${window.location.host}/duel/${params.duelId}`}
-          className="py-3 rounded-md text-green-400"
+          className="py-3 rounded-md text-green-400 break-normal"
           onClick={() => toast.success("Link copied to clipboard")}
         >
           {window.location.host}/duel/{params.duelId}
@@ -257,7 +268,7 @@ const Duel: React.FC<DuelProps> = () => {
           )}
         {(getDuel().currentGame?.player ||
           getDuel().currentGame.creator?.id === getUser().id) && (
-          <div className="w-30 card">
+          <div className="w-full md:w-30 card">
             <p className="text-lg flex justify-center mb-3">
               {getDuel().currentGame.creator?.id === getUser().id
                 ? `${getDuel().currentGame?.player?.name || "Player"}'s turn`
@@ -308,6 +319,28 @@ const Duel: React.FC<DuelProps> = () => {
               )}
           </div>
         )}
+      </div>
+      <div className="flex justify-center mb-5">
+        <table className="table-auto">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Solution</th>
+              <th>Points</th>
+            </tr>
+          </thead>
+          <tbody>
+            {getDuel().currentScore.map((score: any) => {
+              return (
+                <tr key={nanoid()}>
+                  <td>{score.userName}</td>
+                  <td></td>
+                  <td>{score.score}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
       <div className="flex justify-center mb-8">
         <Link to="/" className="underline" target="_blank">

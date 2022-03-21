@@ -95,7 +95,9 @@ const App: React.FC = () => {
     }
   };
 
-  return <div className="p-10">{loading ? <Loading /> : getScene()}</div>;
+  return (
+    <div className="p-2 md:p-10">{loading ? <Loading /> : getScene()}</div>
+  );
 };
 
 export default App;

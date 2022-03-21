@@ -72,17 +72,18 @@ const CreateDuel: React.FC<CreateDuelProps> = (props) => {
 
   const onDuelCreate = async (values: any) => {
     try {
-      const user = JSON.parse(window.localStorage.getItem("user") || "{}");
-      if (values.word && values.word.length === MAX_WORD_LENGTH) {
+      if (values.word && values.word.trim().length === MAX_WORD_LENGTH) {
         // Register duel
-        const duel = await createDuel({ variables: { creatorId: user.id } });
+        const duel = await createDuel({
+          variables: { creatorId: getUser().id },
+        });
 
         // Register game
         await createGame({
           variables: {
-            solution: values.word.toLocaleUpperCase(),
+            solution: values.word.trim(),
             duelId: duel.data?.createDuel,
-            creatorId: user.id,
+            creatorId: getUser().id,
           },
         });
 

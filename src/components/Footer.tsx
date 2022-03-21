@@ -8,7 +8,7 @@ const Footer: React.FC = () => {
         <img src="/images/zef-logo-black.png" className="ml-2" alt="logo" />
       </div>
       <div className="flex justify-center">
-        <span>
+        <span className="text-center">
           See how the logic was{" "}
           <a
             href="https://zef.zefhub.io/blog/wordle-using-zefops"
