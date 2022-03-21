@@ -318,30 +318,29 @@ const Duel: React.FC<DuelProps> = () => {
           </div>
         )}
       </div>
-      {/*
       <div className="flex justify-center mb-5">
         <table className="table-auto">
           <thead>
             <tr>
               <th>Player</th>
               <th>Solution</th>
-              <th>Points</th>
             </tr>
           </thead>
           <tbody>
-            {getDuel().currentScore.map((score: any) => {
+            {getDuel().games.map((game: any) => {
+              if (game.completed === false) {
+                return null;
+              }
               return (
                 <tr key={nanoid()}>
-                  <td>{score.userName}</td>
-                  <td></td>
-                  <td>{score.score}</td>
+                  <td>{game.player?.name}</td>
+                  <td>{game.solution}</td>
                 </tr>
               );
             })}
           </tbody>
         </table>
       </div>
-      */}
       <div className="flex justify-center mb-8">
         <Link to="/" className="underline" target="_blank">
           Create new duel
