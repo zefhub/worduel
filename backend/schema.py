@@ -27,6 +27,7 @@ type Game {
  duel: Duel
  completed: Boolean
  solution:  String
+ traceID:   String
  guesses: [String]
 }
 
@@ -40,6 +41,7 @@ type Duel {
 
 type Score {
   userName: String
+  userInfo: User
   score: Int
 }
 
