@@ -5,7 +5,7 @@ from zef.gql import *
 from time import sleep
 import os
 
-worduel_tag = os.getenv('TAG', "worduel/main")
+worduel_tag = os.getenv('TAG', "worduel/main2")
 if __name__ == "__main__":
     g = Graph(worduel_tag)
     # make_primary(g, True)
