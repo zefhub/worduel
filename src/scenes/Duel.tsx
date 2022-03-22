@@ -8,7 +8,7 @@ import Clipboard from "react-clipboard.js";
 import GraphemeSplitter from "grapheme-splitter";
 import { MAX_WORD_LENGTH, MAX_CHALLENGES } from "constants/settings";
 import { unicodeLength } from "lib/words";
-import { getUser } from "lib/storage";
+import { getUser, decodeTraceId } from "lib/storage";
 import Grid from "components/grid/Grid";
 import { Keyboard } from "components/keyboard/Keyboard";
 import CreateDuelForm from "forms/CreateDuel";
@@ -55,6 +55,7 @@ const GET_DUEL = gql`
         id
         completed
         solution
+        traceID
         guesses
         creator {
           id
@@ -69,6 +70,7 @@ const GET_DUEL = gql`
         id
         completed
         solution
+        traceID
         guesses
         creator {
           id
@@ -117,8 +119,8 @@ const Duel: React.FC<DuelProps> = () => {
   const [isGameWon, setIsGameWon] = useState(false);
 
   useEffect(() => {
-    if (duel && duel.getDuel.currentGame?.solution) {
-      setSolution(duel.getDuel.currentGame.solution);
+    if (duel && duel.getDuel.currentGame?.traceID) {
+      setSolution(decodeTraceId(duel.getDuel.currentGame.traceID));
     }
     if (duel && duel.getDuel.currentGame?.guesses) {
       setGuesses(duel.getDuel.currentGame.guesses);
@@ -292,9 +294,7 @@ const Duel: React.FC<DuelProps> = () => {
               )}
             {getDuel().currentGame?.completed && (
               <div>
-                {getDuel().currentGame.guesses.includes(
-                  getDuel().currentGame.solution
-                ) ? (
+                {getDuel().currentGame.guesses.includes(solution) ? (
                   <h1 className="text-3xl font-bold text-green-600 mb-1 text-center">
                     Game won!
                   </h1>
@@ -304,7 +304,9 @@ const Duel: React.FC<DuelProps> = () => {
                   </h1>
                 )}
                 <div className="flex justify-center mb-5">
-                  <h5>Solution: {getDuel().currentGame?.solution}</h5>
+                  <h5>
+                    Solution: {decodeTraceId(getDuel().currentGame?.traceID)}
+                  </h5>
                 </div>
                 {getDuel().currentGame.creator?.id === getUser().id && (
                   <p className="text-center">Please stand by for new game.</p>
@@ -334,7 +336,7 @@ const Duel: React.FC<DuelProps> = () => {
               return (
                 <tr key={nanoid()}>
                   <td>{game.player?.name}</td>
-                  <td>{game.solution}</td>
+                  <td>{decodeTraceId(game.traceID)}</td>
                 </tr>
               );
             })}
