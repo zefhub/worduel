@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useLazyQuery, gql } from "@apollo/client";
+import { getUser as getLocalUser } from "lib/storage";
 import Loading from "components/Loading";
 
 // Scenes
@@ -13,6 +14,14 @@ const SCENES = {
   CREATE_DUEL: "CREATE_DUEL",
   DUEL: "DUEL",
 };
+
+const GET_USER = gql`
+  query GetUser($userId: ID) {
+    getUser(userId: $userId) {
+      id
+    }
+  }
+`;
 
 const GET_DUEL = gql`
   query getDuel($duelId: ID) {
@@ -35,6 +44,8 @@ const GET_DUEL = gql`
 
 const App: React.FC = () => {
   const params = useParams();
+  const [getUser] = useLazyQuery(GET_USER, {});
+
   const [getDuel, { data: duel }] = useLazyQuery(GET_DUEL, {
     variables: {
       duelId: params.duelId,
@@ -45,20 +56,26 @@ const App: React.FC = () => {
   const [scene, setScene] = useState<string>("");
 
   useEffect(() => {
+    if (getLocalUser()) {
+      getUser({ variables: { userId: getLocalUser().id } }).then(({ data }) => {
+        if (!data.getUser) {
+          window.localStorage.removeItem("user");
+          setScene(SCENES.USERNAME);
+        }
+      });
+    }
+  }, []);
+
+  useEffect(() => {
     if (params.duelId) {
       getDuel();
     }
   }, [params.duelId, getDuel]);
 
   useEffect(() => {
-    let user: any = {};
-    if (window.localStorage.getItem("user")) {
-      user = JSON.parse(window.localStorage.getItem("user") || "{}");
-    }
-
     // Check for match ID
     if (params.duelId) {
-      if (user && user.id) {
+      if (getLocalUser().id) {
         setScene(SCENES.DUEL);
         setLoading(false);
         return;
