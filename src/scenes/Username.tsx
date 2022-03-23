@@ -82,6 +82,27 @@ const Username: React.FC<UsernameProps> = (props) => {
               </button>
             </div>
           </form>
+          <div className="mt-8">
+            <ul className="list-disc">
+              <li>
+                If you don't know how to play Wordle, watch{" "}
+                <a
+                  href="https://www.youtube.com/watch?v=lv4Zg-209MY"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline text-blue-600"
+                >
+                  this
+                </a>
+                .
+              </li>
+              <li>You can choose a dictionary word or your own word.</li>
+              <li>
+                You can follow along and see your friend's guesses (and vice
+                versa).
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
       <Footer />
