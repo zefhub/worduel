@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Fragment } from "react";
 import { gql, useMutation, useQuery } from "@apollo/client";
 import { useParams, Link } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -8,7 +8,7 @@ import Clipboard from "react-clipboard.js";
 import GraphemeSplitter from "grapheme-splitter";
 import { MAX_WORD_LENGTH, MAX_CHALLENGES } from "constants/settings";
 import { unicodeLength } from "lib/words";
-import { getUser } from "lib/storage";
+import { getUser, decodeTraceId } from "lib/storage";
 import Grid from "components/grid/Grid";
 import { Keyboard } from "components/keyboard/Keyboard";
 import CreateDuelForm from "forms/CreateDuel";
@@ -27,6 +27,20 @@ const CREATE_GAME = gql`
       id
       message
       success
+    }
+  }
+`;
+
+const MY_DUELS = gql`
+  query myDuels($userId: ID) {
+    getUser(userId: $userId) {
+      id
+      duels {
+        id
+        players {
+          id
+        }
+      }
     }
   }
 `;
@@ -55,6 +69,7 @@ const GET_DUEL = gql`
         id
         completed
         solution
+        traceID
         guesses
         creator {
           id
@@ -69,6 +84,7 @@ const GET_DUEL = gql`
         id
         completed
         solution
+        traceID
         guesses
         creator {
           id
@@ -105,6 +121,12 @@ const Duel: React.FC<DuelProps> = () => {
   if (createGameError) {
     toast.error(createGameError.message);
   }
+
+  const { data: myDuels } = useQuery(MY_DUELS, {
+    variables: { userId: getUser().id },
+    fetchPolicy: "network-only",
+  });
+
   const { data: duel, loading: getDuelLoading } = useQuery(GET_DUEL, {
     variables: { duelId: params.duelId },
     fetchPolicy: "network-only",
@@ -117,8 +139,8 @@ const Duel: React.FC<DuelProps> = () => {
   const [isGameWon, setIsGameWon] = useState(false);
 
   useEffect(() => {
-    if (duel && duel.getDuel.currentGame?.solution) {
-      setSolution(duel.getDuel.currentGame.solution);
+    if (duel && duel.getDuel.currentGame?.traceID) {
+      setSolution(decodeTraceId(duel.getDuel.currentGame.traceID));
     }
     if (duel && duel.getDuel.currentGame?.guesses) {
       setGuesses(duel.getDuel.currentGame.guesses);
@@ -175,7 +197,7 @@ const Duel: React.FC<DuelProps> = () => {
           duelId: params.duelId,
           playerId: getUser().id,
         },
-        refetchQueries: [GET_DUEL],
+        refetchQueries: [MY_DUELS, GET_DUEL],
       });
       toast.success("Duel accepted!");
     } catch (error: any) {
@@ -208,6 +230,43 @@ const Duel: React.FC<DuelProps> = () => {
     return {};
   };
 
+  const duelClosed = (): boolean => {
+    if (getDuel().players.length < 2) {
+      return false;
+    }
+    if (getDuel().players.length === 2) {
+      for (const player of getDuel().players) {
+        if (player.id === getUser().id) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    if (!myDuels) {
+      return false;
+    }
+    if (myDuels.getUser.duels.length === 0) {
+      return false;
+    }
+    const duel = myDuels.getUser.duels.filter(
+      (duel: any) => duel.id === params.duelId
+    )[0];
+    if (!duel) {
+      return true;
+    }
+    if (duel.players.length < 2) {
+      return false;
+    }
+    for (const player of duel.players) {
+      if (player.id === getUser().id) {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
   if (!duel || getDuelLoading) {
     return <Loading />;
   }
@@ -233,114 +292,129 @@ const Duel: React.FC<DuelProps> = () => {
           {window.location.host}/duel/{params.duelId}
         </Clipboard>
       </div>
-      <div className="flex justify-center">
-        <div className="grid grid-cols-3 w-30">
-          <h4>{getDuel().currentScore[0]?.userName}</h4>
-          <span className="flex justify-center">
-            {getDuel().currentScore[0]?.score}
-            &nbsp;:&nbsp;
-            {getDuel().currentScore[1]?.score}
-          </span>
-          <h4 className="flex justify-end">
-            {getDuel().currentScore[1]?.userName || "-"}
-          </h4>
+      {duelClosed() ? (
+        <div className="flex justify-center flex-col items-center">
+          <h1 className="text-2xl md:text-4xl mb-6 mt-5 underline">
+            Sorry, game already started
+          </h1>
         </div>
-      </div>
-      <div className="flex justify-center mb-8">
-        {!getDuel().currentGame?.player &&
-          getDuel().currentGame.creator?.id !== getUser().id && (
-            <div className="w-30 card">
-              <p className="text-lg flex justify-center mb-5">
-                Do you accept this duel?
-              </p>
-              <div className="flex justify-center">
-                <button
-                  type="button"
-                  className="bg-black text-white py-3 pl-6 pr-6 shadow-sm rounded-md"
-                  onClick={onDuelAccept}
-                >
-                  Accept
-                </button>
-              </div>
+      ) : (
+        <Fragment>
+          <div className="flex justify-center">
+            <div className="grid grid-cols-3 w-30">
+              <h4>{getDuel().currentScore[0]?.userName}</h4>
+              <span className="flex justify-center">
+                {getDuel().currentScore[0]?.score}
+                &nbsp;:&nbsp;
+                {getDuel().currentScore[1]?.score}
+              </span>
+              <h4 className="flex justify-end">
+                {getDuel().currentScore[1]?.userName || "-"}
+              </h4>
             </div>
-          )}
-        {(getDuel().currentGame?.player ||
-          getDuel().currentGame.creator?.id === getUser().id) && (
-          <div className="w-full md:w-30 card">
-            <p className="text-lg flex justify-center mb-3">
-              {getDuel().currentGame.creator?.id === getUser().id
-                ? `${getDuel().currentGame?.player?.name || "Player"}'s turn`
-                : "Enter your guess:"}
-            </p>
-            <Grid
-              guesses={guesses}
-              solution={solution}
-              currentGuess={currentGuess}
-              isRevealing={false}
-              currentRowClassName=""
-            />
-            {getDuel().currentGame.player?.id === getUser().id &&
-              !getDuel().currentGame?.completed && (
-                <Keyboard
-                  onChar={onChar}
-                  onDelete={onDelete}
-                  onEnter={onEnter}
+          </div>
+          <div className="flex justify-center mb-8">
+            {!getDuel().currentGame?.player &&
+              getDuel().currentGame.creator?.id !== getUser().id && (
+                <div className="w-30 card">
+                  <p className="text-lg flex justify-center mb-5">
+                    Do you accept this duel?
+                  </p>
+                  <div className="flex justify-center">
+                    <button
+                      type="button"
+                      className="bg-black text-white py-3 pl-6 pr-6 shadow-sm rounded-md"
+                      onClick={onDuelAccept}
+                    >
+                      Accept
+                    </button>
+                  </div>
+                </div>
+              )}
+            {(getDuel().currentGame?.player ||
+              getDuel().currentGame.creator?.id === getUser().id) && (
+              <div className="w-full md:w-30 card">
+                <p className="text-lg flex justify-center mb-3">
+                  {getDuel().currentGame.creator?.id === getUser().id
+                    ? `${
+                        getDuel().currentGame?.player?.name || "Player"
+                      }'s turn`
+                    : "Enter your guess:"}
+                </p>
+                <Grid
                   guesses={guesses}
                   solution={solution}
+                  currentGuess={currentGuess}
                   isRevealing={false}
+                  currentRowClassName=""
                 />
-              )}
-            {getDuel().currentGame?.completed && (
-              <div>
-                {getDuel().currentGame.guesses.includes(
-                  getDuel().currentGame.solution
-                ) ? (
-                  <h1 className="text-3xl font-bold text-green-600 mb-1 text-center">
-                    Game won!
-                  </h1>
-                ) : (
-                  <h1 className="text-3xl font-bold text-red-600 mb-1 text-center">
-                    Game lost!
-                  </h1>
+                {getDuel().currentGame.player?.id === getUser().id &&
+                  !getDuel().currentGame?.completed && (
+                    <Keyboard
+                      onChar={onChar}
+                      onDelete={onDelete}
+                      onEnter={onEnter}
+                      guesses={guesses}
+                      solution={solution}
+                      isRevealing={false}
+                    />
+                  )}
+                {getDuel().currentGame?.completed && (
+                  <div>
+                    {getDuel().currentGame.guesses.includes(solution) ? (
+                      <h1 className="text-3xl font-bold text-green-600 mb-1 text-center">
+                        Game won!
+                      </h1>
+                    ) : (
+                      <h1 className="text-3xl font-bold text-red-600 mb-1 text-center">
+                        Game lost!
+                      </h1>
+                    )}
+                    <div className="flex justify-center mb-5">
+                      <h5>
+                        Solution:{" "}
+                        {decodeTraceId(getDuel().currentGame?.traceID)}
+                      </h5>
+                    </div>
+                    {getDuel().currentGame.creator?.id === getUser().id && (
+                      <p className="text-center">
+                        Please stand by for new game.
+                      </p>
+                    )}
+                  </div>
                 )}
-                <div className="flex justify-center mb-5">
-                  <h5>Solution: {getDuel().currentGame?.solution}</h5>
-                </div>
-                {getDuel().currentGame.creator?.id === getUser().id && (
-                  <p className="text-center">Please stand by for new game.</p>
-                )}
+                {getDuel().currentGame?.completed &&
+                  getDuel().currentGame.creator?.id !== getUser().id && (
+                    <CreateDuelForm onSubmit={onGameCreate} />
+                  )}
               </div>
             )}
-            {getDuel().currentGame?.completed &&
-              getDuel().currentGame.creator?.id !== getUser().id && (
-                <CreateDuelForm onSubmit={onGameCreate} />
-              )}
           </div>
-        )}
-      </div>
-      <div className="flex justify-center mb-5">
-        <table className="table-auto">
-          <thead>
-            <tr>
-              <th>Player</th>
-              <th>Solution</th>
-            </tr>
-          </thead>
-          <tbody>
-            {getDuel().games.map((game: any) => {
-              if (game.completed === false) {
-                return null;
-              }
-              return (
-                <tr key={nanoid()}>
-                  <td>{game.player?.name}</td>
-                  <td>{game.solution}</td>
+          <div className="flex justify-center mb-5">
+            <table className="table-auto">
+              <thead>
+                <tr>
+                  <th>Player</th>
+                  <th>Solution</th>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody>
+                {getDuel().games.map((game: any) => {
+                  if (game.completed === false) {
+                    return null;
+                  }
+                  return (
+                    <tr key={nanoid()}>
+                      <td>{game.player?.name}</td>
+                      <td>{decodeTraceId(game.traceID)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Fragment>
+      )}
       <div className="flex justify-center mb-8">
         <Link to="/" className="underline" target="_blank">
           Create new duel
