@@ -56,6 +56,8 @@ def create_game(solution: str, duel_id: str, creator_id: str,  g: VT.Graph, **de
     def make_return(msg: str = "", game_id: str = "", success: bool = False):
         return {"message": msg, "id": game_id, "success": success}
     solution = to_upper(solution)
+    if len(solution) != 5: return make_return("The solution should be 5 exactly letters long!")
+
     # Creating a game for a duel that doesn't exist
     if duel_id not in g:
         return make_return("Given duel_id doesn't exist in the Graph")
