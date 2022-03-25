@@ -154,11 +154,11 @@ const Duel: React.FC<DuelProps> = () => {
 
   const onChar = (value: string) => {
     if (
-      unicodeLength(`${currentGuess}${value}`) <= MAX_WORD_LENGTH &&
+      unicodeLength(`${currentGuess}${value}`.trim()) <= MAX_WORD_LENGTH &&
       guesses.length < MAX_CHALLENGES &&
       !isGameWon
     ) {
-      setCurrentGuess(`${currentGuess}${value}`);
+      setCurrentGuess(`${currentGuess}${value}`.trim());
     }
   };
 
@@ -169,7 +169,7 @@ const Duel: React.FC<DuelProps> = () => {
   };
 
   const onEnter = async () => {
-    if (currentGuess.length > 0) {
+    if (currentGuess.length === MAX_WORD_LENGTH) {
       const { data } = await submitGuess({
         variables: {
           gameId: duel.getDuel.currentGame?.id,
@@ -187,6 +187,8 @@ const Duel: React.FC<DuelProps> = () => {
       }
       setCurrentGuess("");
       setGuesses([...guesses, currentGuess]);
+    } else {
+      toast.error(`Word must be ${MAX_WORD_LENGTH} characters long`);
     }
   };
 
@@ -231,10 +233,10 @@ const Duel: React.FC<DuelProps> = () => {
   };
 
   const duelClosed = (): boolean => {
-    if (getDuel().players.length < 2) {
+    if ((getDuel()?.players || []).length < 2) {
       return false;
     }
-    if (getDuel().players.length === 2) {
+    if ((getDuel()?.players || []).length === 2) {
       for (const player of getDuel().players) {
         if (player.id === getUser().id) {
           return false;
