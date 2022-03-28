@@ -291,7 +291,12 @@ const Duel: React.FC<DuelProps> = () => {
           className="py-3 rounded-md text-green-400 break-normal"
           onClick={() => toast.success("Link copied to clipboard")}
         >
-          {window.location.host}/duel/{params.duelId}
+          <button
+            type="button"
+            className="bg-green-500 text-white py-3 pl-3 pr-3 shadow-sm rounded-md"
+          >
+            Copy link to clipboard
+          </button>
         </Clipboard>
       </div>
       {duelClosed() ? (
