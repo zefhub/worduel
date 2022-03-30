@@ -5,7 +5,9 @@ const Footer: React.FC = () => {
     <Fragment>
       <div className="flex justify-center align-center mb-2">
         Powered by{" "}
-        <img src="/images/zef-logo-black.png" className="ml-2" alt="logo" />
+        <a href="https://www.zefhub.io" target="_blank" rel="noreferrer">
+          <img src="/images/zef-logo-black.png" className="ml-2" alt="logo" />
+        </a>
       </div>
       <div className="flex justify-center">
         <span className="text-center">
