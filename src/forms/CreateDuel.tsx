@@ -15,8 +15,9 @@ export interface CreateDuelProps {
 
 const CreateDuel: React.FC<CreateDuelProps> = (props) => {
   const client = useApolloClient();
-  const { register, handleSubmit, formState, setValue } =
-    useForm<{ word: string }>();
+  const { register, handleSubmit, formState, setValue } = useForm<{
+    word: string;
+  }>();
 
   const onGetWord = async () => {
     const { data } = await client.query({
@@ -39,7 +40,6 @@ const CreateDuel: React.FC<CreateDuelProps> = (props) => {
         id="word"
         type="text"
         className="block bg-white w-full border border-slate-300 rounded-md py-3 pl-3 pr-3 shadow-sm focus:outline-none focus:border-sky-500 focus:ring-sky-500 focus:ring-1 sm:text-sm mb-3"
-        placeholder="guess"
         disabled={formState.isSubmitting}
         required
       />
