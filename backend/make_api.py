@@ -2,14 +2,18 @@
 from zef import *
 from zef.ops import *
 from zef.gql import *
-from zef.gql.generate_gql_api import generate_graph_from_file, make_api
+from zef.gql.generate_gql_api import generate_graph_from_file
 from zef.gql.resolvers_utils import *
 from schema import schema_gql
 
-# 
+# Create an empty graph
 g = Graph()
+
+# Create a copy of the schema on the graph g we created
 generate_graph_from_file(schema_gql, g)
 
+
+# Create the delegates/blueprint for our data model
 [
     delegate_of((ET.User, RT.Name, AET.String)),
     delegate_of((ET.Duel, RT.Participant, ET.User)),
@@ -22,10 +26,16 @@ generate_graph_from_file(schema_gql, g)
 ] | transact[g] | run
 
 
+# Retrieve the wordlist and add it as a node on the graph
 url = "https://raw.githubusercontent.com/charlesreid1/five-letter-words/master/sgb-words.txt"
 words = url | make_request | run | get['response_text'] | collect
 (ET.WordList, RT.FiveLetters, words) | g | run
+#----------------------------------------------------------------
 
+
+##########################################
+#######Zef Function Resolvers#############
+##########################################
 
 ############--Mutations--###############
 # createUser(name: String): ID
@@ -175,6 +185,8 @@ def submit_guess(game_id, guess, g: VT.Graph, **defaults):
     # wordlist_rt = {5: RT.FiveLetters}.get(
     #     length(solution), RT.FiveLetters)   # Update this
     # wordlist = g | all[wordlist_rt] | first | target | now | value | split['\n'] | map[to_upper] | collect
+
+    # NOTE This is added here because fetching and parsing the wordlist with each request is costly and slow.
     five_letters = ['CASAS', 'WITHS', 'DODGY', 'SCUDI', 'MUNGS', 'MUONS', 'UREAS', 'IOCTL', 'UNHIP', 'KRONE', 'SAGER', 'VERST', 'EXPAT', 'GRONK', 'UVULA', 'SHAWM', 'BILGY', 'BRAES', 'CENTO', 'WEBBY', 'LIPPY', 'GAMIC', 'LORDY', 'MAZED', 'TINGS', 'SHOAT', 'FAERY', 'WIRER',
 'DIAZO', 'CARER', 'RATER', 'GREPS', 'RENTE', 'ZLOTY', 'VIERS', 'UNAPT', 'POOPS', 'FECAL', 'KEPIS', 'TAXON', 'EYERS', 'WONTS', 'SPINA', 'STOAE', 'YENTA', 'POOEY', 'BURET', 'JAPAN', 'BEDEW', 'HAFTS', 'SELFS', 'OARED', 'HERBY', 'PRYER', 'OAKUM', 'DINKS', 'TITTY',
 'SEPOY', 'PENES', 'FUSEE', 'WINEY', 'GIMPS', 'NIHIL', 'RILLE', 'GIBER', 'OUSEL', 'UMIAK', 'CUPPY', 'HAMES', 'SHITS', 'AZINE', 'GLADS', 'TACET', 'BUMPH', 'COYER', 'HONKY', 'GAMER', 'GOOKY', 'WASPY', 'SEDGY', 'BENTS', 'VARIA', 'DJINN', 'JUNCO', 'PUBIC', 'WILCO',
@@ -405,6 +417,7 @@ def submit_guess(game_id, guess, g: VT.Graph, **defaults):
         else:
             return make_return(is_eligible=False, message=f"You made this guess before!")
 
+
 #############--Querys--###############
 # getUser(usedId: ID): User
 @func(g)
@@ -425,6 +438,7 @@ def get_duel(duel_id, g: VT.Graph, **defaults):
 # getRandomWord(length: Int): String
 @func(g)
 def get_random_word(length: int, g: VT.Graph, **defaults):
+    # NOTE This is added here because fetching and parsing the wordlist with each request is costly and slow.
     five_letters = ['CASAS', 'WITHS', 'DODGY', 'SCUDI', 'MUNGS', 'MUONS', 'UREAS', 'IOCTL', 'UNHIP', 'KRONE', 'SAGER', 'VERST', 'EXPAT', 'GRONK', 'UVULA', 'SHAWM', 'BILGY', 'BRAES', 'CENTO', 'WEBBY', 'LIPPY', 'GAMIC', 'LORDY', 'MAZED', 'TINGS', 'SHOAT', 'FAERY', 'WIRER',
 'DIAZO', 'CARER', 'RATER', 'GREPS', 'RENTE', 'ZLOTY', 'VIERS', 'UNAPT', 'POOPS', 'FECAL', 'KEPIS', 'TAXON', 'EYERS', 'WONTS', 'SPINA', 'STOAE', 'YENTA', 'POOEY', 'BURET', 'JAPAN', 'BEDEW', 'HAFTS', 'SELFS', 'OARED', 'HERBY', 'PRYER', 'OAKUM', 'DINKS', 'TITTY',
 'SEPOY', 'PENES', 'FUSEE', 'WINEY', 'GIMPS', 'NIHIL', 'RILLE', 'GIBER', 'OUSEL', 'UMIAK', 'CUPPY', 'HAMES', 'SHITS', 'AZINE', 'GLADS', 'TACET', 'BUMPH', 'COYER', 'HONKY', 'GAMER', 'GOOKY', 'WASPY', 'SEDGY', 'BENTS', 'VARIA', 'DJINN', 'JUNCO', 'PUBIC', 'WILCO',
@@ -652,11 +666,11 @@ def duel_current_score(z: VT.ZefRef, g: VT.Graph, **defaults):
 
 #############--Game Special Logic--###############
 @func(g)
-def game_solution(z: VT.ZefRef, g: VT.Graph, **defaults):
-    return random_pick(["WRONG", "LOSER", "CHEAT"])
-
-@func(g)
 def game_trace_id(z: VT.ZefRef, g: VT.Graph, **defaults):
+    """
+    This is encoding a game's solution in a pseudorandom string that we can decode in the frontend.
+    We do this so we don't return the solution in plain text.
+    """
     import random
     solution = z >> RT.Solution | value | collect
     solution = (solution.upper() | enumerate
@@ -666,7 +680,12 @@ def game_trace_id(z: VT.ZefRef, g: VT.Graph, **defaults):
     )
     return solution
 
-
+@func(g)
+def game_solution(z: VT.ZefRef, g: VT.Graph, **defaults):
+    """
+    For the actual solution field of game, we return a random "Wrong" answer, just to confuse cheaters ;)
+    """
+    return random_pick(["WRONG", "LOSER", "CHEAT"])
 #############--User Special Logic--###############
 @func(g)
 def user_duels(z: VT.ZefRef, g: VT.Graph, **defaults):
@@ -675,6 +694,8 @@ def user_duels(z: VT.ZefRef, g: VT.Graph, **defaults):
 #----------------------------------------------------------------
 
 
+
+# Retrieve the schema root and also the GQL_Types
 schema = gql_schema(g)
 types = gql_types_dict(schema)
 
@@ -696,11 +717,17 @@ specific_resolvers = (
     return ("return None #This means that no resolver is defined!", ["z", "ctx"])
 """) | collect
 (schema, RT.CustomerSpecificResolvers, specific_resolvers) | g | run
+#----------------------------------------------------------------
+
+
+# Connecting the delegate and zef function resolvers for each type
+# Some types have a mix of the two to resolve their types
 
 
 # Mutations Handlers
 def get_zefref_for_func(x):
   return LazyValue(x) | absorbed | first | second | collect
+
 
 mutations_dict = {
     "acceptDuel":   get_zefref_for_func(accept_duel),
@@ -750,7 +777,7 @@ connect_zef_function_resolvers(g, types['GQL_Duel'], duel_dict)
 game_dict = {
     "player":       {"triple": (ET.Game, RT.Player, ET.User)},
     "creator":      {"triple": (ET.Game, RT.Creator, ET.User)},
-    "duel":         {"triple": (ET.Duel, RT.Game, ET.Game), "is_out": False},
+    "duel":         {"triple": (ET.Duel, RT.Game, ET.Game), "is_out": False},  # is_out is True by default, setting it to False means that the traversal is in traversal and the direction of resolving is shifted.
     "guesses":      {"triple": (ET.Game, RT.Guess, AET.String)},
     "completed":    {"triple": (ET.Game, RT.Completed, AET.Bool)},
 }
@@ -762,7 +789,8 @@ game_dict = {
 connect_zef_function_resolvers(g, types['GQL_Game'], game_dict)
 
 
+
+# Sync and tag the graph so it could be run on a different process/server
 wordle_tag = os.getenv("TAG", "worduel/main3")
 g | sync[True] | run
 g | tag[wordle_tag] | run
-# %%
