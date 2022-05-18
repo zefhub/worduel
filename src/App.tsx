@@ -3,7 +3,6 @@ import { useParams } from "react-router-dom";
 import { useLazyQuery, gql } from "@apollo/client";
 import { getUser as getLocalUser } from "lib/storage";
 import Loading from "components/Loading";
-import "./maintenance.css";
 
 // Scenes
 import UsernameScene from "scenes/Username";
@@ -114,7 +113,7 @@ const App: React.FC = () => {
     }
   };
 
-  // TODO: Remove this
+  /*
   return (
     <article className="flex flex-col items-center">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 202.24 202.24">
@@ -143,6 +142,7 @@ const App: React.FC = () => {
       </div>
     </article>
   );
+  */
 
   return (
     <div className="p-2 md:p-10">{loading ? <Loading /> : getScene()}</div>
