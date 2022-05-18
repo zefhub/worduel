@@ -1,4 +1,4 @@
-# %%
+#%%
 from zef import *
 from zef.ops import *
 from zef.gql import *
@@ -6,7 +6,7 @@ from zef.gql.generate_gql_api import generate_graph_from_file, make_api
 from zef.gql.resolvers_utils import *
 from schema import schema_gql
 
-wordle_tag = os.getenv("TAG", "worduel/main3")
+# 
 g = Graph()
 generate_graph_from_file(schema_gql, g)
 
@@ -761,6 +761,8 @@ game_dict = {
 }
 connect_zef_function_resolvers(g, types['GQL_Game'], game_dict)
 
+
+wordle_tag = os.getenv("TAG", "worduel/main3")
 g | sync[True] | run
 g | tag[wordle_tag] | run
 # %%
