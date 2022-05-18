@@ -1,5 +1,14 @@
 # Quick overview of Worduel backend
 
+## Blogs to Reference
+
+[Part 1](https://zef.zefhub.io/blog/wordle-using-zefops) Explains the logic behind Wordle, how ZefOps are used.
+
+[Part 2](https://zef.zefhub.io/blog/wordle-solver-one-line) Deeper overview of using ZefOps to a Wordle solver/assistant.
+
+
+[Part 3](https://zef.zefhub.io/blog/worduel-gql-backend) Explains different resolver types, ZefGQL, ZefFX, and deploying on ZefHub.
+
 ## Files Overview
 
     schema.py 
