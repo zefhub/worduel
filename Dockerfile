@@ -36,13 +36,9 @@ RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
 
 RUN ln -fs /usr/share/zoneinfo/Asia/Singapore /etc/localtime
 
-RUN git config --global --add credential.helper 'store --file=/run/secrets/gitcredentials' \
-  && git config --global url."https://github.com/".insteadOf git@github.com:
-
-COPY get_zefdb.sh .
 ADD backend .
 
-RUN --mount=type=secret,id=gitcredentials bash get_zefdb.sh zefDB v0.15.2-dev2 'zef-.*cp310'
+RUN pip install zef==0.15.6a1
 
 EXPOSE 5010
 
