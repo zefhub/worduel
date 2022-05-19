@@ -1,3 +1,22 @@
+# Copyright (c) 2022 Synchronous Technologies Pte Ltd
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the "Software"), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+# the Software, and to permit persons to whom the Software is furnished to do so,
+# subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+# FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+# COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+# IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 #%%
 from zef import *
 from zef.ops import *
@@ -45,17 +64,17 @@ def create_user(name: str, g: VT.Graph, **defaults) -> str:
         (ET.User['p1'], RT.Name, name)
     ] | transact[g] | run
 
-    return str(r['p1'] | to_ezefref | uid | collect)
+    return str(r['p1'] | origin_uid | collect)
 
 
 # createDuel(creatorId: ID): ID
 @func(g)
 def create_duel(creator_id: str, g: VT.Graph, **defaults) -> str:
     r = [
-        (ET.Duel['d1'], RT.Participant, g[creator_id]),
+        (ET.Duel['d1'], RT.Participant, now(g)[creator_id]),
     ] | transact[g] | run
 
-    return str(r['d1'] | to_ezefref | uid | collect)
+    return str(r['d1'] | origin_uid | collect)
 
 
 # createGame(solution: String, duelId: ID, creatorId: ID): ID
@@ -73,13 +92,13 @@ def create_game(solution: str, duel_id: str, creator_id: str,  g: VT.Graph, **de
     if creator_id not in g:
         return make_return("Given creator_id doesn't exist in the Graph")
 
-    duel_games = now(g[duel_id]) >> L[RT.Game]
+    duel_games = now(g)[duel_id] >> L[RT.Game]
     if length(duel_games) == 0:
         r = [
             (ET.Game['g1'], RT.Solution,    solution),
-            (Z['g1'],       RT.Creator,     g[creator_id]),
+            (Z['g1'],       RT.Creator,     now(g)[creator_id]),
             (Z['g1'],       RT.Completed,   False),
-            (g[duel_id],    RT.Game,        Z['g1']),
+            (now(g)[duel_id],    RT.Game,        Z['g1']),
         ] | transact[g] | run
 
     else:
@@ -99,7 +118,7 @@ def create_game(solution: str, duel_id: str, creator_id: str,  g: VT.Graph, **de
         creator = last_game >> RT.Creator | collect
 
         # The creator must be last game's player
-        if creator_id != str(uid(player | to_ezefref)):
+        if creator_id != str(origin_uid(player)):
             return make_return("Last creator can't create this game.")
 
         r = [
@@ -107,27 +126,27 @@ def create_game(solution: str, duel_id: str, creator_id: str,  g: VT.Graph, **de
             (Z['g1'],       RT.Creator,     player),
             (Z['g1'],       RT.Player,      creator),
             (Z['g1'],       RT.Completed,   False),
-            (g[duel_id],    RT.Game,        Z['g1']),
+            (now(g)[duel_id],    RT.Game,        Z['g1']),
         ] | transact[g] | run
 
-    return make_return("", str(r['g1'] | to_ezefref | uid | collect), True)
+    return make_return("", str(r['g1'] | origin_uid | collect), True)
 
 
 # acceptDuel(duelId: ID, playerId: ID): Boolean
 @func(g)
 def accept_duel(duel_id: str, player_id: str, g: VT.Graph, **defaults) -> str:
-    connected_games = now(g[duel_id]) >> L[RT.Game]
+    connected_games = now(g)[duel_id] >> L[RT.Game]
     if length(connected_games) == 1:       # There must be only one game attached!
         first_game = connected_games | first | collect
 
         # The player wasn't attached yet
         if length(first_game >> L[RT.Player]) == 0:
             [
-                (g[duel_id], RT.Participant, g[player_id]),
-                (first_game, RT.Player, g[player_id])
+                (now(g)[duel_id], RT.Participant, now(g)[player_id]),
+                (first_game, RT.Player, now(g)[player_id])
             ] | transact[g] | run
 
-            return str(first_game | to_ezefref | uid | collect)
+            return str(first_game | origin_uid | collect)
 
     return ""
 
@@ -164,7 +183,7 @@ def submit_guess(game_id, guess, g: VT.Graph, **defaults):
     if game_id not in g:
         return None
     MAX_GUESSES = 6
-    game = now(g[game_id])
+    game = now(g)[game_id]
     guess = to_upper_case(guess)
 
     # Don't continue if this game is already completed
@@ -422,18 +441,18 @@ def submit_guess(game_id, guess, g: VT.Graph, **defaults):
 # getUser(usedId: ID): User
 @func(g)
 def get_user(user_id: str, g: VT.Graph, **defaults):
-    return now(g[user_id])
+    return now(g)[user_id]
 
 
 # getGame(gameId: ID): Game
 @func(g)
 def get_game(game_id, g: VT.Graph, **defaults):
-    return now(g[game_id])
+    return now(g)[game_id]
 
 # getDuel(duelId: ID): Duel
 @func(g)
 def get_duel(duel_id, g: VT.Graph, **defaults):
-    return now(g[duel_id])
+    return now(g)[duel_id]
 
 # getRandomWord(length: Int): String
 @func(g)
@@ -712,7 +731,7 @@ fallback_resolvers = (
     if fn == "id" and now(ft) >> RT.Name | value | collect == "GQL_ID":
        return ('''
                 if type(z) == dict: return z["id"]
-                else: return str(z | to_ezefref | uid | collect)''')
+                else: return str(z  | origin_uid | collect)''')
     else:
         return "return None"
 """)

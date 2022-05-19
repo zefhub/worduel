@@ -1,3 +1,22 @@
+# Copyright (c) 2022 Synchronous Technologies Pte Ltd
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the "Software"), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+# the Software, and to permit persons to whom the Software is furnished to do so,
+# subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+# FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+# COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+# IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 FROM python:3.10-slim
 
 ENV APP_PATH=/usr/src/app
@@ -36,13 +55,9 @@ RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
 
 RUN ln -fs /usr/share/zoneinfo/Asia/Singapore /etc/localtime
 
-RUN git config --global --add credential.helper 'store --file=/run/secrets/gitcredentials' \
-  && git config --global url."https://github.com/".insteadOf git@github.com:
-
-COPY get_zefdb.sh .
 ADD backend .
 
-RUN --mount=type=secret,id=gitcredentials bash get_zefdb.sh zefDB v0.15.2-dev2 'zef-.*cp310'
+RUN pip install zef==0.15.6a1
 
 EXPOSE 5010
 
