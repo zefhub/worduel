@@ -704,19 +704,19 @@ default_list = ["CreateGameReturnType", "SubmitGuessReturnType", "Score"] | to_j
 (schema, RT.DefaultResolversList, default_list) | g | run
 
 
-# CustomerSpecificResolvers
-specific_resolvers = (
-    """def customer_specific_resolvers(ot, ft, bt, rt, fn):
-    from zef.ops import now, value, collect
+# Fallback Resolvers
+fallback_resolvers = (
+    """def fallback_resolvers(ot, ft, bt, rt, fn):
     from zef import RT
+    from zef.ops import now, value, collect
     if fn == "id" and now(ft) >> RT.Name | value | collect == "GQL_ID":
        return ('''
                 if type(z) == dict: return z["id"]
-                else: return str(z | to_ezefref | uid | collect)''',
-    ["z", "ctx"])
-    return ("return None #This means that no resolver is defined!", ["z", "ctx"])
-""") | collect
-(schema, RT.CustomerSpecificResolvers, specific_resolvers) | g | run
+                else: return str(z | to_ezefref | uid | collect)''')
+    else:
+        return "return None"
+""")
+(schema, RT.FallbackResolvers, fallback_resolvers) | g | run
 #----------------------------------------------------------------
 
 
